@@ -27,7 +27,7 @@ jobs:
             flutter pub get
             cd ios
             pod install
-        working-directory: ios
+        #working-directory: ios
 
       - name: Build iOS
         run:  |
