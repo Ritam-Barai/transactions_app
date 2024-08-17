@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>method</key>
+    <string>development</string> <!-- Change to "enterprise" or "ad-hoc" if using paid accounts or specific provisioning profiles -->
+    <key>teamID</key>
+    <string></string> <!-- Leave this empty if you're not using a specific team ID -->
+    <key>signingStyle</key>
+    <string>manual</string> <!-- Set to "automatic" if you want Xcode to handle signing automatically -->
+    <key>provisioningProfiles</key>
+    <dict>
+        <!-- Add your provisioning profiles here, if applicable -->
+    </dict>
+</dict>
+</plist>
