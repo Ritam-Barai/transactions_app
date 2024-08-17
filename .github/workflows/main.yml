@@ -31,5 +31,6 @@ jobs:
       - name: Archive build
         if: success()
         run: |
+          ls -a build/ios/iphoneos/
           mkdir -p build/archive
-          mv build/ios/iphoneos/*.ipa build/archive/
+          mv build/ios/iphoneos/* build/archive/
