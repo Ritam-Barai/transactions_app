@@ -31,22 +31,17 @@ jobs:
 
       - name: Build iOS
         run:  |
-          flutter build ios --release --no-codesign
+          flutter build ios  --no-codesign
 
-      - name: Archive iOS App
+      - name: Archive build
+        if: success()
         run: |
-          xcodebuild -workspace ios/Runner.xcworkspace -scheme Runner -archivePath $PWD/build/ios/Runner.xcarchive archive
+          ls -a build/ios/iphoneos/
+          mkdir -p build/archive
+          mv build/ios/iphoneos/* build/archive/
 
-      - name: Export IPA
-        run: |
-          xcodebuild -exportArchive -archivePath $PWD/build/ios/Runner.xcarchive -exportOptionsPlist ios/ExportOptions.plist -exportPath $PWD/build/ios/ipa
-        # Make sure to use a minimal ExportOptions.plist without signing information
-        # Create a basic ExportOptions.plist for local testing
-        env:
-          GYM_XCODE_LIST_DISABLE: true
-
-      - name: Upload IPA
+      - name: Upload APP
         uses: actions/upload-artifact@v3
         with:
-          name: ipa-file
-          path: build/ios/ipa/*.ipa
+          name: app-file
+          path: build/archive/*.app
