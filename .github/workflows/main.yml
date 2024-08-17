@@ -36,13 +36,15 @@ jobs:
       - name: Archive iOS App
         run: |
           xcodebuild -workspace ios/Runner.xcworkspace -scheme Runner -archivePath $PWD/build/ios/Runner.xcarchive archive
-        env:
-          GYM_XCODE_LIST_DISABLE: true
 
       - name: Export IPA
         run: |
           xcodebuild -exportArchive -archivePath $PWD/build/ios/Runner.xcarchive -exportOptionsPlist ios/ExportOptions.plist -exportPath $PWD/build/ios/ipa
-      
+        # Make sure to use a minimal ExportOptions.plist without signing information
+        # Create a basic ExportOptions.plist for local testing
+        env:
+          GYM_XCODE_LIST_DISABLE: true
+
       - name: Upload IPA
         uses: actions/upload-artifact@v3
         with:
