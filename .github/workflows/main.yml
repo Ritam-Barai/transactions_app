@@ -23,14 +23,28 @@ jobs:
           channel: 'stable' # or specify a version like '3.3.2'
 
       - name: Install dependencies
-        run: flutter pub get
+        run: | 
+            flutter pub get
+            cd ios
+            pod install
+        working-directory: ios
 
       - name: Build iOS
-        run: flutter build ios --no-codesign
+        run:  |
+          flutter build ios --release --no-codesign
 
-      - name: Archive build
-        if: success()
+      - name: Archive iOS App
         run: |
-          ls -a build/ios/iphoneos/
-          mkdir -p build/archive
-          mv build/ios/iphoneos/* build/archive/
+          xcodebuild -workspace ios/Runner.xcworkspace -scheme Runner -archivePath $PWD/build/ios/Runner.xcarchive archive
+        env:
+          GYM_XCODE_LIST_DISABLE: true
+
+      - name: Export IPA
+        run: |
+          xcodebuild -exportArchive -archivePath $PWD/build/ios/Runner.xcarchive -exportOptionsPlist ios/ExportOptions.plist -exportPath $PWD/build/ios/ipa
+      
+      - name: Upload IPA
+        uses: actions/upload-artifact@v3
+        with:
+          name: ipa-file
+          path: build/ios/ipa/*.ipa
