@@ -9,9 +9,14 @@ const SUPABASE_URL = Keychain.get("SUPABASE_GET_HANDLERS_URL");
 const SUPABASE_KEY = Keychain.get("SUPABASE_GET_HANDLERS_KEY");// safe only for public reads
 const TABLE_NAME = "trans_today";
 
+const SUPABASE_INSERT_URL = Keychain.get("SUPABASE_INSERT_URL");
+const SUPABASE_INSERT_KEY = Keychain.get("SUPABASE_INSERT_KEY");
+
+
+
 // === Fetch today's data from Supabase ===
 async function fetchTransactions() {
-//   const today = new Date().toISOString().split("T")[0]; // YYYY-MM-DD
+//   const today = new Date().toISOString().split("T")[0];in // YYYY-MM-DD
   const url = `${SUPABASE_URL}/today-transactions`;
 
   let req = new Request(url);
@@ -39,7 +44,7 @@ if (fm.fileExists(file)) {
  return tranData;
 }
 
-
+//async function createInsertion(table){}
 
 // === Edit a transaction ===
 async function editTransaction(tx) {
@@ -76,7 +81,7 @@ async function editTransaction(tx) {
 if (response === 0) {
   // OK pressed, handle if needed
   console.log("User pressed OK");
-  return null;
+   return null;
   }
 }
       console.log(`New values - Card: ${newCard}, Amount: ${newAmount}`);
@@ -96,7 +101,8 @@ if (response === 0) {
       
     } else { // Cancel
       console.log("Edit cancelled by user");
-      return null;  // Return null instead of original tx
+//       await table.reload();
+       return null;  // Return null instead of original tx
     }
   } catch (error) {
     console.error("Error in editTransaction:", error);
@@ -140,9 +146,42 @@ async function deleteTransaction(tx) {
   console.log("Server response:", response);
 
   Safari.open("scriptable:///run/Transaction Log Widget"); // reload
-}// 
+}// /// 
+// // insert caching for offline connectivity
+// // 
+// 
+async function insertTransaction(tx){
+  let url = `${SUPABASE_INSERT_URL}`;
+  let req = new Request(url);
+  req.method = "POST";
+  req.headers = {
+    "apikey": SUPABASE_INSERT_KEY,
+    "Authorization": `Bearer ${SUPABASE_INSERT_KEY}`,
+    "Content-Type": "application/json"
+  };
+
+   // Attach JSON body with tx.id
+  req.body = JSON.stringify(tx);
+
+  let response = await req.load();
+  if (response.status !== 200) throw new Error("Upload failed");
+  console.log("Server response:", response);
+
+// Check if any entry matches
+const tran_data = await fetchTransactions();
+let exists = tran_data.some(entry => entry.id === response.id)
+
+if (exists) {
+  console.log(`Found entry with id = ${response.id}. Entry has been verified!`)
+} else {
+  console.log(`No entry found with id = ${response.id}. Entry not yet stored!`)
+}
+
+  Safari.open("scriptable:///run/Transaction Log Widget"); 
+};
+
 //  === Build the UI table ===
-async function buildtable(data,tranData) {
+async function buildTranTable(data,tranData) {
   let table = new UITable();
   table.showSeparators = true;
   
@@ -181,7 +220,8 @@ async function buildtable(data,tranData) {
 //   totalRow.titleFont = Font.boldSystemFont(30);
   netCredit.titleColor = Color.green() ;
   table.addRow(subtotal);
-
+  };
+async function buildupMenu(table,data,tranData){
   let padding = new UITableRow();
   padding.isHeader = true;
   padding.height = 15;
@@ -194,17 +234,122 @@ async function buildtable(data,tranData) {
   header.addText("Cr").centerAligned();;
   header.addText("Card");
   header.addText("Time").centerAligned();
-//   header.addText("×").rightAligned();
-let trashSymbol = SFSymbol.named("trash.fill"); // SF Symbol
-let trashImg = trashSymbol.image; // UIImage
-header.addImage(trashImg).rightAligned();
-
+//   header.addText("×").rightAligned();// 
+// let trashSymbol = SFSymbol.named("trash.fill"); // SF Symbol// 
+// let trashImg = trashSymbol.image; // UIImage// 
+// header.addImage(trashImg).rightAligned();
+let insertButton = header.addButton("📝");
+insertButton.rightAligned();
+insertButton.Font = Font.boldSystemFont(30);
+insertButton.onTap = async () => {
+  // Toggle the value
+ await iniInsertForm();
+//   }catch (error) {
+//     console.log("Creating Insert Form failed:", error);
+//     console.log("Error details:", error.message);
+     };
   table.addRow(header);
-  
-  };
+  }
   buildupHeader(table,tranData);
+  buildupMenu(table,data,tranData);
   buildupTable(table,data);
   
+  
+async function iniInsertForm() {
+  try {
+    console.log("Starting iniInsertForm...");
+    
+    // Check if the module can be imported
+    let utils;
+    try {
+      utils = importModule('Insert_form'); // Make sure this matches your exact filename
+      console.log("Module imported successfully");
+    } catch (moduleError) {
+      console.error("Failed to import module 'Insert form':", moduleError);
+      throw new Error("Module import failed: " + moduleError.message);
+    }
+    
+    // Check if iniCurrTime exists and works
+    let currDate;
+    try {
+      currDate = await utils.iniCurrTime();
+      console.log("Current date retrieved:", currDate);
+    } catch (timeError) {
+      console.error("Failed to get current time:", timeError);
+      throw new Error("Time retrieval failed: " + timeError.message);
+    }
+    
+    let insertEntry = {
+      card: "0000",
+      amount: "0.00",
+      action: "debited",
+      date: ""
+    };
+    console.log("Initial insertEntry:", insertEntry);
+    
+    // Check if all required parameters exist
+    console.log("Checking parameters...");
+    console.log("table exists:", typeof table !== 'undefined');
+    console.log("buildupHeader exists:", typeof buildupHeader !== 'undefined');
+    console.log("buildupMenu exists:", typeof buildupMenu !== 'undefined');
+    console.log("buildupTable exists:", typeof buildupTable !== 'undefined');
+    console.log("data exists:", typeof data !== 'undefined');
+    console.log("tranData exists:", typeof tranData !== 'undefined');
+    
+    // Call the insert form with error handling
+    let resultEntry;
+    try {
+      console.log("Calling insertTableEntry...");
+      resultEntry = await utils.insertTableEntry(
+        table,
+        buildupHeader,
+        buildupMenu,
+        buildupTable,
+        data,
+        tranData,
+        insertEntry,
+        currDate
+      );
+      console.log("insertTableEntry completed, result:", resultEntry);
+    } catch (insertError) {
+      console.error("Error in insertTableEntry:", insertError);
+      throw new Error("Insert table entry failed: " + insertError.message);
+    }
+    
+    // Handle the result
+    if (resultEntry) {
+      console.log(`New Entry: ${JSON.stringify(resultEntry)}`);
+      
+      // Check if insertTransaction function exists
+      if (typeof insertTransaction === 'function') {
+        await insertTransaction(resultEntry);
+        console.log("Transaction inserted successfully");
+      } else {
+        console.warn("insertTransaction function not found");
+      }
+    } else {
+      console.log("Operation was cancelled or invalid");
+    }
+    
+  } catch (error) {
+    console.error("Error in iniInsertForm:", error);
+    console.error("Error details:", error.message);
+    console.error("Stack trace:", error.stack);
+    
+    // Show user-friendly error
+    let alert = new Alert();
+    alert.title = "Error";
+    alert.message = `Failed to open insert form: ${error.message}`;
+    alert.addAction("OK");
+    await alert.present();
+  }
+}
+
+// Usage: Attach this to your button
+// let addEntryButton = someRow.addButton("Add Entry");
+// addEntryButton.onTap = iniInsertForm;
+
+
   async function buildupTable(table,data){
   // Data rows
   for (let i = data.length - 1; i >= 0; i--) {
@@ -244,14 +389,9 @@ header.addImage(trashImg).rightAligned();
   n.sound = "default"; // optional: "default", "alert", "complete", etc.
   await n.schedule();
       }
-      row_updated = true;
-      table.removeAllRows();
-      buildupHeader(table,tranData);
-      buildupTable(table,data);
-      await table.reload();
       await updateTransaction(tx);
       // Optional: Rebuild table to show changes
-      // rebuildTable();
+      // rebuildTranTable();
     } else {
       console.log("Edit was cancelled");
     }
@@ -259,6 +399,12 @@ header.addImage(trashImg).rightAligned();
     console.log("Alert box failed:", error);
     console.log("Error details:", error.message);
   }
+  table.removeAllRows();
+      buildupHeader(table,tranData);
+      buildupMenu(table,data,tranData);
+      buildupTable(table,data);
+      await table.reload();
+      
 };
     
     let amount = row.addText(`₹${tx.amount}`);
@@ -291,6 +437,7 @@ button.onTap = async () => {
   row_updated = true;
       table.removeAllRows();
       buildupHeader(table,tranData);
+      buildupMenu(table,data,tranData);
       buildupTable(table,data);
       await table.reload();
       await updateTransaction(tx);
@@ -306,7 +453,7 @@ button.onTap = async () => {
   tranTime = dt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit',hour12: false }); // "18:42"
   row.addText(tranTime).centerAligned();
 //   row.addText("").rightAligned(); 
-  let cell = row.addButton("❌");
+  let cell = row.addButton("✖️");
   cell.rightAligned();
   cell.titleColor = Color.red();
     // Swipe right to delete
@@ -328,6 +475,7 @@ button.onTap = async () => {
       
       table.removeAllRows();
       buildupHeader(table,tranData);
+      buildupMenu(table,data,tranData);
       buildupTable(table,data);
       await table.reload();
       // Call your Supabase delete function here
@@ -342,13 +490,10 @@ button.onTap = async () => {
   };
   
   await table.present();
-  
 }
-
-
 // === MAIN ===// 
 // let data = await fetchTransactions();// 
-// await buildTable(data);
+// await buildTranTable(data);
 try {
   // Setup GET request with Authorization
   
@@ -368,12 +513,12 @@ try {
 console.log("Is Array?" + Array.isArray(data));
 
 
-  await buildtable(data,last_tran);
+  await buildTranTable(data,last_tran);
 //   await table.reload();
 
   
 } catch (e) {
   console.error("Fetch error:", e);
 }
-
-Script.complete();
+// 
+ Script.complete();
