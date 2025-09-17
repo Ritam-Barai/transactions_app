@@ -150,7 +150,10 @@ async function deleteTransaction(tx) {
 // // insert caching for offline connectivity
 // // 
 // 
+/*
 async function insertTransaction(tx){
+  const SUPABASE_INSERT_URL = Keychain.get("SUPABASE_INSERT_URL");
+const SUPABASE_INSERT_KEY = Keychain.get("SUPABASE_INSERT_KEY");
   let url = `${SUPABASE_INSERT_URL}`;
   let req = new Request(url);
   req.method = "POST";
@@ -178,7 +181,7 @@ if (exists) {
 }
 
   Safari.open("scriptable:///run/Transaction Log Widget"); 
-};
+};*/
 
 //  === Build the UI table ===
 async function buildTranTable(data,tranData) {
@@ -187,7 +190,9 @@ async function buildTranTable(data,tranData) {
   
   const dt = new Date(tranData.time);
   tranDate = dt.toLocaleDateString();
-  async function buildupHeader(table,tranData){
+  let isFormVisible = false;
+  let insertIcon = "📝";
+  async function buildupHeader(table,tranData,isFormVisible,insertIcon){
   // Header row
   let date = new UITableRow();
   date.isHeader = true;
@@ -238,12 +243,31 @@ async function buildupMenu(table,data,tranData){
 // let trashSymbol = SFSymbol.named("trash.fill"); // SF Symbol// 
 // let trashImg = trashSymbol.image; // UIImage// 
 // header.addImage(trashImg).rightAligned();
-let insertButton = header.addButton("📝");
+let insertButton = header.addButton(insertIcon);
 insertButton.rightAligned();
 insertButton.Font = Font.boldSystemFont(30);
 insertButton.onTap = async () => {
-  // Toggle the value
+  console.log(`Form visible: ${!isFormVisible}`);
+  isFormVisible = true;// 
+// insertIcon = "🔼";
  await iniInsertForm();
+/*
+  if (!isFormVisible) {
+  // Toggle the value
+isFormVisible = true;
+insertIcon = "🔼";
+ await iniInsertForm();
+
+  } else {
+    // Hide form (collapse)
+isFormVisible = false;
+insertIcon = "📝";
+table.removeAllRows();
+      buildupHeader(table,tranData);
+      buildupMenu(table,data,tranData);
+      buildupTable(table,data);
+      await table.reload();
+}*/
 //   }catch (error) {
 //     console.log("Creating Insert Form failed:", error);
 //     console.log("Error details:", error.message);
@@ -254,8 +278,50 @@ insertButton.onTap = async () => {
   buildupMenu(table,data,tranData);
   buildupTable(table,data);
   
+  async function iniInsertForm() {
+  let utils = importModule('Insert_form');
+  let currDate = await utils.iniCurrTime();
+
+  let insertEntry = {
+    card: "0000",
+    amount: "0.00",
+    action: "debited",
+    date: ""
+  };
   
-async function iniInsertForm() {
+ let resultEntry = null;
+
+while (true) {
+  resultEntry = await utils.insertTableEntry(
+    table,
+    buildupHeader,
+    buildupMenu,
+    buildupTable,
+    data,
+    tranData,
+    insertEntry,
+    currDate
+  );
+
+  if (resultEntry) {
+    console.log(`result Entry: ${resultEntry}`);
+    break; // ✅ exit loop once found
+  }
+
+  console.log("No Entry yet, retrying...");
+  // prevent infinite CPU spin
+  await new Promise(resolve => setTimeout(resolve, 500));
+}
+
+if (typeof insertTransaction === 'function') {
+  console.log(`Transaction Entry: ${resultEntry}`);
+  // await insertTransaction(resultEntry);
+}
+
+
+}
+
+/*async function iniInsertForm() {
   try {
     console.log("Starting iniInsertForm...");
     
@@ -343,7 +409,7 @@ async function iniInsertForm() {
     alert.addAction("OK");
     await alert.present();
   }
-}
+}*/
 
 // Usage: Attach this to your button
 // let addEntryButton = someRow.addButton("Add Entry");
@@ -407,7 +473,7 @@ async function iniInsertForm() {
       
 };
     
-    let amount = row.addText(`₹${tx.amount}`);
+    let amount = row.addText(`₹${Number(tx.amount).toFixed(2)}`);
     amount.titleColor = tx.is_credit ? Color.green() : Color.red();
     amount.leftAligned();
 //     let isCredit = tx.is_credit;
@@ -494,6 +560,8 @@ button.onTap = async () => {
 // === MAIN ===// 
 // let data = await fetchTransactions();// 
 // await buildTranTable(data);
+
+module.exports = {fetchLastTransaction,fetchTransactions};
 try {
   // Setup GET request with Authorization
   

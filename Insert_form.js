@@ -1,6 +1,53 @@
 // Variables used by Scriptable.
 // These must be at the very top of the file. Do not edit.
 // icon-color: red; icon-glyph: magic;
+ const SUPABASE_INSERT_URL = Keychain.get("SUPABASE_INSERT_URL");
+const SUPABASE_INSERT_KEY = Keychain.get("SUPABASE_INSERT_KEY");
+
+
+async function insertTransaction(tx){
+  
+  let url = `${SUPABASE_INSERT_URL}`;
+  console.log(tx);
+  let req = new Request(url);
+  req.method = "POST";
+  req.headers = {
+//     "apikey": SUPABASE_INSERT_KEY,
+    "Authorization": `Bearer ${SUPABASE_INSERT_KEY}`,
+    "Content-Type": "application/json"
+  };
+
+   // Attach JSON body with tx.id
+  req.body = JSON.stringify(tx);
+//   await sleep(5000);
+
+    // Use loadJSON() to get parsed object
+  let response;
+  try {
+    response = await req.loadJSON();  
+    
+  } catch (err) {
+    console.error("Request failed:", err);
+    throw new Error("Upload failed");
+  }
+  serverRes = JSON.stringify(response);
+  console.log(response.id);
+
+// Check if any entry matches
+/*
+const tran_data = await utils.fetchTransactions();
+console.log(tran_data);
+let exists = tran_data.some(entry => parseInt(entry.id) === response.id)
+
+if (exists) {
+  console.log(`Found entry with id = ${serverRes.id}. Entry has been verified!`)
+} else {
+  console.log(`No entry found with id = ${serverRes.id}. Entry not yet stored!`)
+}
+*/
+  Safari.open("scriptable:///run/Transaction Log Widget"); 
+};
+
 async function pickTime(initialHour = 12, initialMin = 0) {
   let selectedHour = initialHour;
   let selectedMin = initialMin;
@@ -147,16 +194,17 @@ function convertToUTC(currDate){
   buildupHeader,
   buildupMenu,
   buildupTable,
-  data,tranData,insertEntry,currDate){
+  data,
+  tranData,
+  insertEntry,
+  currDate
+  ){
 
   insertEntry.date = convertToUTC(currDate);
-  let isCredit = false;
- 
-  table.removeAllRows();
-  await buildTable(table);
-  await buildupHeader(table,tranData);
-  await buildupMenu(table,data,tranData);
-  await buildupTable(table,data);
+  let isCredit = insertEntry.action === "credited" ? true : false;
+  console.log(JSON.stringify(insertEntry));
+let utils = importModule('Transaction UI Table');
+   
 
   async function buildTable(table){
     let header = new UITableRow();
@@ -207,7 +255,7 @@ function convertToUTC(currDate){
           await error.present();
         }
       }
-
+/*
       table.removeAllRows();
       await buildTable(table);
       await buildupHeader(table,tranData);
@@ -215,6 +263,16 @@ function convertToUTC(currDate){
       await buildupTable(table,data);
       await table.reload();
       console.log(insertEntry);
+*/
+await insertTableEntry(table,
+  buildupHeader,
+  buildupMenu,
+  buildupTable,
+  data,
+  tranData,
+  insertEntry,
+  currDate
+  );
     };
   
     let amountCell = row1.addButton(insertEntry.amount == "0.00"? "0.00": insertEntry.amount);
@@ -244,6 +302,7 @@ function convertToUTC(currDate){
         }
       }
 
+      /*
       table.removeAllRows();
       await buildTable(table);
       await buildupHeader(table,tranData);
@@ -251,6 +310,16 @@ function convertToUTC(currDate){
       await buildupTable(table,data);
       await table.reload();
       console.log(insertEntry);
+*/
+await insertTableEntry(table,
+  buildupHeader,
+  buildupMenu,
+  buildupTable,
+  data,
+  tranData,
+  insertEntry,
+  currDate
+  );
     };
 
     let crButton = row1.addButton(isCredit ? " ● " : " ◯ ");
@@ -261,13 +330,24 @@ function convertToUTC(currDate){
         isCredit = !isCredit;
         crButton.title = isCredit ? " ● " : " ◯ ";
         insertEntry.action = isCredit? "credited":"debited";
-        table.removeAllRows();
-        await buildTable(table);
-        await buildupHeader(table,tranData);
-        await buildupMenu(table,data,tranData);
-        await buildupTable(table,data);
-        await table.reload();
-        console.log(insertEntry);
+        /*
+      table.removeAllRows();
+      await buildTable(table);
+      await buildupHeader(table,tranData);
+      await buildupMenu(table,data,tranData);
+      await buildupTable(table,data);
+      await table.reload();
+      console.log(insertEntry);
+*/
+await insertTableEntry(table,
+  buildupHeader,
+  buildupMenu,
+  buildupTable,
+  data,
+  tranData,
+  insertEntry,
+  currDate
+  );
       }catch(e){};
     };
     table.addRow(row1);
@@ -296,6 +376,7 @@ function convertToUTC(currDate){
       }
       let UTC=convertToUTC(currDate);
       insertEntry.date = `${UTC}`;
+      /*
       table.removeAllRows();
       await buildTable(table);
       await buildupHeader(table,tranData);
@@ -303,6 +384,16 @@ function convertToUTC(currDate){
       await buildupTable(table,data);
       await table.reload();
       console.log(insertEntry);
+*/
+await insertTableEntry(table,
+  buildupHeader,
+  buildupMenu,
+  buildupTable,
+  data,
+  tranData,
+  insertEntry,
+  currDate
+  );
     };
 
     let dateUpdate = row2.addButton("📅");
@@ -319,6 +410,7 @@ function convertToUTC(currDate){
         }
       let UTC=convertToUTC(currDate);
       insertEntry.date = `${UTC}`;
+      /*
       table.removeAllRows();
       await buildTable(table);
       await buildupHeader(table,tranData);
@@ -326,6 +418,16 @@ function convertToUTC(currDate){
       await buildupTable(table,data);
       await table.reload();
       console.log(insertEntry);
+*/
+await insertTableEntry(table,
+  buildupHeader,
+  buildupMenu,
+  buildupTable,
+  data,
+  tranData,
+  insertEntry,
+  currDate
+  );
     };
 
     let timeCell = row2.addButton(`Time: ${currDate.hour.toString().padStart(2,"0")}:${currDate.minute.toString().padStart(2,"0")} IST`);
@@ -347,6 +449,7 @@ function convertToUTC(currDate){
       }
       let UTC=convertToUTC(currDate);
       insertEntry.date = `${UTC}`;
+      /*
       table.removeAllRows();
       await buildTable(table);
       await buildupHeader(table,tranData);
@@ -354,6 +457,16 @@ function convertToUTC(currDate){
       await buildupTable(table,data);
       await table.reload();
       console.log(insertEntry);
+*/
+await insertTableEntry(table,
+  buildupHeader,
+  buildupMenu,
+  buildupTable,
+  data,
+  tranData,
+  insertEntry,
+  currDate
+  );
     };
 
     let timeUpdate = row2.addButton("🕒");
@@ -369,6 +482,7 @@ function convertToUTC(currDate){
         }
       let UTC=convertToUTC(currDate);
       insertEntry.date = `${UTC}`;
+      /*
       table.removeAllRows();
       await buildTable(table);
       await buildupHeader(table,tranData);
@@ -376,6 +490,16 @@ function convertToUTC(currDate){
       await buildupTable(table,data);
       await table.reload();
       console.log(insertEntry);
+*/
+await insertTableEntry(table,
+  buildupHeader,
+  buildupMenu,
+  buildupTable,
+  data,
+  tranData,
+  insertEntry,
+  currDate
+  );
     };
 
     table.addRow(row2);
@@ -388,16 +512,133 @@ function convertToUTC(currDate){
     let cancelBtn = row3.addButton("Cancel");
     cancelBtn.centerAligned();
     cancelBtn.onTap = async () => {
+      try{
       console.log("Cancelled");   
+//       isFormVisible = false;
+
+
       table.removeAllRows();
       await buildupHeader(table,tranData);
       await buildupMenu(table,data,tranData);
       await buildupTable(table,data);
       await table.reload();
+
+//        return null;
+      } catch (error) {
+        console.error("Cancel button error:", error);
+//         reject(error);
+      }
     };
 
     let insertBtn = row3.addButton("Insert");
     insertBtn.centerAligned();
+    
+    insertBtn.onTap = async () => {
+      
+      try {
+        console.log(`The date ${insertEntry.date.toString()}`);
+        console.log(JSON.stringify(insertEntry));
+        
+        // Validate future date
+        if(new Date(insertEntry.date) > new Date()){
+          let alert = new Alert()
+          alert.title = "Future Date"
+          alert.message = `The date ${insertEntry.date.toString()} is after the current time.`
+          alert.addAction("OK")
+          await alert.present();
+//           resolve(null); // Return null for cancelled operation
+//           return;
+/*
+      table.removeAllRows();
+      await buildTable(table);
+      await buildupHeader(table,tranData);
+      await buildupMenu(table,data,tranData);
+      await buildupTable(table,data);
+      await table.reload();
+      console.log(insertEntry);
+*/
+await insertTableEntry(table,
+  buildupHeader,
+  buildupMenu,
+  buildupTable,
+  data,
+  tranData,
+  insertEntry,
+  currDate
+  );
+        }
+        
+        // Validate incomplete entry
+        else if(insertEntry.card == "0000" || insertEntry.amount == "0.00" ){
+          console.error("Invalid/Incomplete Entry!");
+          let alert = new Alert()
+          alert.title = "Invalid/Incomplete Entry"
+          alert.message = `The data entered is either invalid or incomplete. check again!`
+          alert.addAction("OK")
+          await alert.present();
+          
+          // Rebuild table
+          /*
+      table.removeAllRows();
+      await buildTable(table);
+      await buildupHeader(table,tranData);
+      await buildupMenu(table,data,tranData);
+      await buildupTable(table,data);
+      await table.reload();
+      console.log(insertEntry);
+*/
+await insertTableEntry(table,
+  buildupHeader,
+  buildupMenu,
+  buildupTable,
+  data,
+  tranData,
+  insertEntry,
+  currDate
+  );
+          
+//           resolve(null); // Return null for invalid entry
+//           return;
+        }else{
+        
+        // Success case - show notification
+        let n = new Notification();
+        n.title = `New Data Entry Received `;
+        n.body = `Card ${insertEntry.card} ${insertEntry.action} with ₹${insertEntry.amount} on ${insertEntry.date}`;
+        n.sound = "default";
+        await n.schedule();
+        
+        // Rebuild table
+//        return insertEntry;
+      /*
+        table.removeAllRows();
+        await buildupHeader(table,tranData);
+        await buildupMenu(table,data,tranData);
+        await buildupTable(table,data);
+        await table.reload();
+*/
+//         isFormVisible = false;
+        // Return the successful entry to the first function
+//         resolve(insertEntry);
+//         return insertBtn;
+   await insertNewEntry(table,
+  buildupHeader,
+  buildupMenu,
+  buildupTable,
+  data,
+  tranData,
+  insertEntry,
+  currDate,
+  utils
+  );
+
+}
+      } catch (error) {
+        console.error("Insert button error:", error);
+//         reject(error);
+      }
+    };
+    
     table.addRow(row3);
     
     padding = new UITableRow();
@@ -405,15 +646,37 @@ function convertToUTC(currDate){
     table.addRow(padding);
     
     // Return the Promise that resolves when insert button is tapped
-    return insertBtn;
+//     return insertBtn;
+
   }
   
-  // Build the table and get the insert button
-  table.removeAllRows();
-  let insertBtn = await buildTable(table);
+   table.removeAllRows();
+  await buildTable(table);
+   await buildupHeader(table,tranData);
+   await buildupMenu(table,data,tranData);
+   await buildupTable(table,data);
   await table.reload();
+//   if(typeof tableStatus === "undefined"){// // 
+// if( tableStatus){
+//     return insertEntry;
+//   }
+  
+  // Build the table and get the insert button// 
+// table.removeAllRows();// 
+// await buildTable(table);// 
+// console.log(`Header Status: ${btnClick}`);
+//   if(!isFormVisible){
+//     return isFormVisible;
+//   }
+  
+//   await buildupHeader(table,tranData);
+//   await buildupMenu(table,data,tranData);
+//   await buildupTable(table,data);
+
+//   await table.reload();
   
   // Return Promise that resolves when insert button is tapped
+/*
   return new Promise((resolve, reject) => {
     insertBtn.onTap = async () => {
       try {
@@ -461,20 +724,112 @@ function convertToUTC(currDate){
         
         // Rebuild table
         table.removeAllRows();
-        await buildupHeader(table,tranData);
+        await buildupHeader(table,tranData,isFormVisible,insertIcon);
         await buildupMenu(table,data,tranData);
         await buildupTable(table,data);
         await table.reload();
         
         // Return the successful entry to the first function
         resolve(insertEntry);
-        
+        return insertEntry;
       } catch (error) {
         console.error("Insert button error:", error);
         reject(error);
       }
     };
-  });
+  });*/
+}
+
+async function insertNewEntry(table,
+  buildupHeader,
+  buildupMenu,
+  buildupTable,
+  data,
+  tranData,
+  insertEntry,
+  currDate,
+  utils
+  ){
+    let updatedData = data;
+    console.log("Last Tran:\n" + JSON.stringify(tranData)); 
+    let newEntry = {
+  amount: parseFloat(insertEntry.amount),   // number instead of string
+  id: 0,                         // unique id (you can replace with db id)
+  card: parseInt(insertEntry.card),
+  is_credit: insertEntry.action === "credited",
+  datetime: insertEntry.date
+};
+  updatedData.push(newEntry);
+  
+  let localTimestamp = new Date(
+  currDate.year,
+  currDate.month - 1,
+  currDate.day,
+  currDate.hour,
+  currDate.minute,
+  0,
+  0
+);
+
+console.log(localTimestamp);
+
+// Format to YYYY-MM-DD HH:mm:ss in local time
+let formattedTime = localTimestamp.getFullYear() + "-" +
+  String(localTimestamp.getMonth() + 1).padStart(2, "0") + "-" +
+  String(localTimestamp.getDate()).padStart(2, "0") + " " +
+  String(localTimestamp.getHours()).padStart(2, "0") + ":" +
+  String(localTimestamp.getMinutes()).padStart(2, "0") + ":" +
+  String(localTimestamp.getSeconds()).padStart(2, "0");
+
+console.log(formattedTime);
+
+  
+  
+let total = parseFloat(tranData.total);
+let netCredit = parseFloat(tranData.netCredit);
+let netDebit = parseFloat(tranData.netDebit);
+let amount = parseFloat(newEntry.amount);
+
+// Update based on action
+if (newEntry.is_credit) {
+  total -= amount;
+  netCredit += amount;
+} else {
+  total += amount;
+  netDebit += amount;
+}
+
+// Update summary
+summary = {
+  ...tranData,
+  total: total.toFixed(2),
+  netCredit: netCredit.toFixed(2),
+  netDebit: netDebit.toFixed(2),
+  prevCard: parseInt(newEntry.card),
+  time: formattedTime
+//   time: new Date(localTimestamp.getTime())
+};
+// 
+// console.log(summary);
+
+
+  
+  console.log("Updated response:\n" + JSON.stringify(updatedData)); 
+  console.log("Updated Last Tran:\n" + JSON.stringify(summary)); 
+  table.removeAllRows();
+      await buildupHeader(table,summary);
+      await buildupMenu(table,updatedData,summary);
+      await buildupTable(table,updatedData);
+      await table.reload();
+      let untimedEntry ={
+        amount: parseFloat(insertEntry.amount),   // number instead of string
+  card: parseInt(insertEntry.card),
+  action: insertEntry.action ,
+      };
+//       let { date, ...untimedEntry } = insertEntry;
+      console.log("Timeless entry:\n" + JSON.stringify(untimedEntry)); 
+        let insertResponse = await insertTransaction(untimedEntry);
+        Safari.open("scriptable:///run/Transaction UI Table");
 }
 
 module.exports = {insertTableEntry, iniCurrTime};
