@@ -45,7 +45,7 @@ if (exists) {
   console.log(`No entry found with id = ${serverRes.id}. Entry not yet stored!`)
 }
 */
-  Safari.open("scriptable:///run/Transaction Log Widget"); 
+   Safari.open("scriptable:///run/Transaction Log Widget"); 
 };
 
 async function pickTime(initialHour = 12, initialMin = 0) {
@@ -204,9 +204,17 @@ function convertToUTC(currDate){
   let isCredit = insertEntry.action === "credited" ? true : false;
   console.log(JSON.stringify(insertEntry));
 let utils = importModule('Transaction UI Table');
-   
+   let insertIcon;
+  insertIcon = "🔼";
+   table.removeAllRows();
+   buildTable(table);
+    buildupHeader(table,tranData,insertIcon);
+    buildupMenu(table,data,tranData);
+    buildupTable(table,data);
+  await table.reload();
 
   async function buildTable(table){
+    
     let header = new UITableRow();
     header.isHeader = true;
     let insertTitle = header.addText("Insert New Entry");
@@ -515,12 +523,12 @@ await insertTableEntry(table,
       try{
       console.log("Cancelled");   
 //       isFormVisible = false;
-
-
+      
+      insertIcon = "📝";
       table.removeAllRows();
-      await buildupHeader(table,tranData);
-      await buildupMenu(table,data,tranData);
-      await buildupTable(table,data);
+       buildupHeader(table,tranData,insertIcon);
+       buildupMenu(table,data,tranData);
+       buildupTable(table,data);
       await table.reload();
 
 //        return null;
@@ -621,6 +629,7 @@ await insertTableEntry(table,
         // Return the successful entry to the first function
 //         resolve(insertEntry);
 //         return insertBtn;
+  insertIcon = "📝";
    await insertNewEntry(table,
   buildupHeader,
   buildupMenu,
@@ -629,7 +638,8 @@ await insertTableEntry(table,
   tranData,
   insertEntry,
   currDate,
-  utils
+  utils,
+  insertIcon
   );
 
 }
@@ -650,12 +660,26 @@ await insertTableEntry(table,
 
   }
   
+//   // 
+// 
+// 
+
+
+/*
+   insertIcon = "🔼";
    table.removeAllRows();
   await buildTable(table);
-   await buildupHeader(table,tranData);
+   await buildupHeader(table,tranData,insertIcon);
    await buildupMenu(table,data,tranData);
    await buildupTable(table,data);
   await table.reload();
+  
+  */
+  
+  
+  
+  
+  
 //   if(typeof tableStatus === "undefined"){// // 
 // if( tableStatus){
 //     return insertEntry;
@@ -748,18 +772,12 @@ async function insertNewEntry(table,
   tranData,
   insertEntry,
   currDate,
-  utils
+  utils,
+  insertIcon
   ){
     let updatedData = data;
     console.log("Last Tran:\n" + JSON.stringify(tranData)); 
-    let newEntry = {
-  amount: parseFloat(insertEntry.amount),   // number instead of string
-  id: 0,                         // unique id (you can replace with db id)
-  card: parseInt(insertEntry.card),
-  is_credit: insertEntry.action === "credited",
-  datetime: insertEntry.date
-};
-  updatedData.push(newEntry);
+    
   
   let localTimestamp = new Date(
   currDate.year,
@@ -783,7 +801,32 @@ let formattedTime = localTimestamp.getFullYear() + "-" +
 
 console.log(formattedTime);
 
-  
+let formattedLocalTime = localTimestamp.getFullYear() + "-" +
+  String(localTimestamp.getMonth() + 1).padStart(2, "0") + "-" +
+  String(localTimestamp.getDate()).padStart(2, "0") + "T" +
+  String(localTimestamp.getHours()).padStart(2, "0") + ":" +
+  String(localTimestamp.getMinutes()).padStart(2, "0") + ":" +
+  String(localTimestamp.getSeconds()).padStart(2, "0");
+
+console.log(formattedLocalTime);
+  let newEntry = {
+  amount: parseFloat(insertEntry.amount),   // number instead of string
+  id: 0,                         // unique id (you can replace with db id)
+  card: parseInt(insertEntry.card),
+  is_credit: insertEntry.action === "credited",
+  datetime: formattedLocalTime
+};
+//   updatedData.push(newEntry);
+  // Find index where new entry should be inserted
+  let index = updatedData.findIndex(entry => new Date(entry.datetime) > new Date(formattedLocalTime));
+
+  if (index === -1) {
+    // If no larger datetime found, push at the end
+    updatedData.push(newEntry);
+  } else {
+    // Insert at the found index
+    updatedData.splice(index, 0, newEntry);
+  }
   
 let total = parseFloat(tranData.total);
 let netCredit = parseFloat(tranData.netCredit);
@@ -817,19 +860,20 @@ summary = {
   console.log("Updated response:\n" + JSON.stringify(updatedData)); 
   console.log("Updated Last Tran:\n" + JSON.stringify(summary)); 
   table.removeAllRows();
-      await buildupHeader(table,summary);
-      await buildupMenu(table,updatedData,summary);
-      await buildupTable(table,updatedData);
+       buildupHeader(table,summary,insertIcon);
+       buildupMenu(table,updatedData,summary);
+       buildupTable(table,updatedData);
       await table.reload();
       let untimedEntry ={
         amount: parseFloat(insertEntry.amount),   // number instead of string
   card: parseInt(insertEntry.card),
   action: insertEntry.action ,
+  date: insertEntry.date
       };
 //       let { date, ...untimedEntry } = insertEntry;
       console.log("Timeless entry:\n" + JSON.stringify(untimedEntry)); 
         let insertResponse = await insertTransaction(untimedEntry);
-        Safari.open("scriptable:///run/Transaction UI Table");
+         Safari.open("scriptable:///run/Transaction UI Table");
 }
 
 module.exports = {insertTableEntry, iniCurrTime};

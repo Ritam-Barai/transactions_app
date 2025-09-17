@@ -192,7 +192,7 @@ async function buildTranTable(data,tranData) {
   tranDate = dt.toLocaleDateString();
   let isFormVisible = false;
   let insertIcon = "📝";
-  async function buildupHeader(table,tranData,isFormVisible,insertIcon){
+  async function buildupHeader(table,tranData,insertIcon){
   // Header row
   let date = new UITableRow();
   date.isHeader = true;
@@ -247,8 +247,8 @@ let insertButton = header.addButton(insertIcon);
 insertButton.rightAligned();
 insertButton.Font = Font.boldSystemFont(30);
 insertButton.onTap = async () => {
-  console.log(`Form visible: ${!isFormVisible}`);
-  isFormVisible = true;// 
+//   console.log(`Form visible: ${isFormVisible}`);
+//   isFormVisible = true;// 
 // insertIcon = "🔼";
  await iniInsertForm();
 /*
@@ -274,7 +274,7 @@ table.removeAllRows();
      };
   table.addRow(header);
   }
-  buildupHeader(table,tranData);
+  buildupHeader(table,tranData,insertIcon);
   buildupMenu(table,data,tranData);
   buildupTable(table,data);
   
@@ -289,7 +289,7 @@ table.removeAllRows();
     date: ""
   };
   
- let resultEntry = null;
+/* let resultEntry = null;
 
 while (true) {
   resultEntry = await utils.insertTableEntry(
@@ -311,13 +311,18 @@ while (true) {
   console.log("No Entry yet, retrying...");
   // prevent infinite CPU spin
   await new Promise(resolve => setTimeout(resolve, 500));
-}
+}*/
 
-if (typeof insertTransaction === 'function') {
-  console.log(`Transaction Entry: ${resultEntry}`);
-  // await insertTransaction(resultEntry);
-}
-
+await utils.insertTableEntry(
+    table,
+    buildupHeader,
+    buildupMenu,
+    buildupTable,
+    data,
+    tranData,
+    insertEntry,
+    currDate
+  );
 
 }
 
@@ -466,7 +471,7 @@ if (typeof insertTransaction === 'function') {
     console.log("Error details:", error.message);
   }
   table.removeAllRows();
-      buildupHeader(table,tranData);
+      buildupHeader(table,tranData,insertIcon);
       buildupMenu(table,data,tranData);
       buildupTable(table,data);
       await table.reload();
@@ -502,7 +507,7 @@ button.onTap = async () => {
   await n.schedule();
   row_updated = true;
       table.removeAllRows();
-      buildupHeader(table,tranData);
+      buildupHeader(table,tranData,insertIcon);
       buildupMenu(table,data,tranData);
       buildupTable(table,data);
       await table.reload();
@@ -540,7 +545,7 @@ button.onTap = async () => {
       
       
       table.removeAllRows();
-      buildupHeader(table,tranData);
+      buildupHeader(table,tranData,insertIcon);
       buildupMenu(table,data,tranData);
       buildupTable(table,data);
       await table.reload();
