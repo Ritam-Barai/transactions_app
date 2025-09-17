@@ -309,8 +309,9 @@ footer.addSpacer();
   err.font = Font.boldSystemFont(14);
 }
 if(!new_tran){ 
-     Safari.open("scriptable:///run/Transaction UI Table");
+//      Safari.open("scriptable:///run/Transaction UI Table");
 }
+Safari.open("scriptable:///run/Transaction UI Table");
 widget.refreshAfterDate = new Date(Date.now() + 30*1000);
 
 // Display the widget
