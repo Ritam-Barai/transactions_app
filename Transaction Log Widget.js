@@ -315,8 +315,56 @@ err.font = Font.boldSystemFont(14);
 widget.refreshAfterDate = new Date(Date.now() + 30*1000);
 
 // Display the widget
+// Detect Lock Screen vs Home Screen
 if (config.runsInWidget) {
-  Script.setWidget(widget);
+  if (config.runsInAccessoryWidget) {
+    // LOCK SCREEN (Accessory widget)
+    let accessory = new ListWidget()
+     accessory.backgroundColor = new Color("#000000",0.1);
+//   let iconSymbol = SFSymbol.named("square.and.pencil.circle.fill"); // SF Symbol
+     let iconSymbol = SFSymbol.named("square.and.pencil"); // SF Symbol
+    let icon = iconSymbol.image; // UIImag
+//     let icon = await loadAppIcon()
+    let img = accessory.addImage(icon)
+     img.imageSize = new Size(50, 50) // scale down for lock screen
+    img.centerAlignImage()
+
+    Script.setWidget(accessory)
+/*let accessory = new ListWidget()
+
+// Draw semi-transparent background with border
+let size = new Size(60, 60) // widget canvas size
+let ctx = new DrawContext()
+ctx.size = size
+ctx.opaque = false
+
+// Fill (20% opacity white)
+ctx.setFillColor(new Color("#FFFFFF", 0.2))
+ctx.fillRect(new Rect(0, 0, size.width, size.height))
+
+// Border (solid white)
+ctx.setStrokeColor(new Color("#FFFFFF", 1))
+ctx.setLineWidth(2)
+ctx.strokeRect(new Rect(1, 1, size.width - 2, size.height - 2))
+
+// Apply as background image
+accessory.backgroundImage = ctx.getImage()
+
+// Add SF Symbol
+let iconSymbol = SFSymbol.named("square.and.pencil.circle.fill")
+let icon = iconSymbol.image
+let img = accessory.addImage(icon)
+img.imageSize = new Size(40, 40)
+img.tintColor = Color.orange()
+img.centerAlignImage()
+
+Script.setWidget(accessory)// 
+// Script.complete()*/
+
+  } else {
+    // HOME SCREEN WIDGET (your big transaction UI)
+    Script.setWidget(widget)
+  }
 } // // // 
 // else {
 //   
@@ -325,5 +373,11 @@ if(!new_tran){
  Safari.open("scriptable:///run/Transaction UI Table");
 }
 // }
+/*
+async function loadAppIcon() {
+  let url = "https://is5-ssl.mzstatic.com/image/thumb/Purple124/v4/21/1e/13/211e13de-2e74-4221-f7db-d6d2c53b4323/AppIcon-1x_U007emarketing-0-7-0-85-220.png/540x540sr.jpg"
+  let req = new Request(url)
+  return req.loadImage()
+}*/
 
 Script.complete();

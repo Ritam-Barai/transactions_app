@@ -195,7 +195,11 @@ async function buildTranTable(data,tranData) {
   const dt = new Date(tranData.time);
   tranDate = dt.toLocaleDateString();
   let isFormVisible = false;
-  let insertIcon = "📝";
+//   let iconSymbol = SFSymbol.named("square.and.pencil"); // SF Symbol
+//     let icon = iconSymbol.image;
+   let insertIcon = "📝";
+//   icon.toBase64String;
+//   "📝";
   async function buildupHeader(table,tranData,insertIcon){
   // Header row
   let date = new UITableRow();
