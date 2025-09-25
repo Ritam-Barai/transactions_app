@@ -186,9 +186,9 @@ if (exists) {
 
   Safari.open("scriptable:///run/Transaction Log Widget"); 
 };*/
-
+let insertIcon = "📝";
 //  === Build the UI table ===
-async function buildTranTable(data,tranData) {
+async function buildTranTable(data,tranData,newTran) {
   let table = new UITable();
   table.showSeparators = true;
   
@@ -197,10 +197,10 @@ async function buildTranTable(data,tranData) {
   let isFormVisible = false;
 //   let iconSymbol = SFSymbol.named("square.and.pencil"); // SF Symbol
 //     let icon = iconSymbol.image;
-   let insertIcon = "📝";
+   
 //   icon.toBase64String;
 //   "📝";
-  async function buildupHeader(table,tranData,insertIcon){
+  async function buildupHeader(table,tranData){
   // Header row
   let date = new UITableRow();
   date.isHeader = true;
@@ -234,7 +234,13 @@ async function buildTranTable(data,tranData) {
   netCredit.titleColor = Color.green() ;
   table.addRow(subtotal);
   };
-async function buildupMenu(table,data,tranData){
+async function buildupMenu(table,data,tranData,insertIcon){
+  if(insertIcon === "🔼"){
+    isFormVisible = true;
+  }
+  else if(insertIcon === "📝"){
+    isFormVisible = false;
+  }
   let padding = new UITableRow();
   padding.isHeader = true;
   padding.height = 15;
@@ -255,11 +261,11 @@ let insertButton = header.addButton(insertIcon);
 insertButton.rightAligned();
 insertButton.Font = Font.boldSystemFont(30);
 insertButton.onTap = async () => {
-//   console.log(`Form visible: ${isFormVisible}`);
+  console.log(`Form visible: ${isFormVisible}`);
 //   isFormVisible = true;// 
-// insertIcon = "🔼";
- await iniInsertForm();
-/*
+//  insertIcon = "🔼";
+//  await iniInsertForm();
+
   if (!isFormVisible) {
   // Toggle the value
 isFormVisible = true;
@@ -271,19 +277,20 @@ insertIcon = "🔼";
 isFormVisible = false;
 insertIcon = "📝";
 table.removeAllRows();
-      buildupHeader(table,tranData);
-      buildupMenu(table,data,tranData);
-      buildupTable(table,data);
+      await buildupHeader(table,tranData);
+      await buildupMenu(table,data,tranData,insertIcon);
+      await buildupTable(table,data);
       await table.reload();
-}*/
+}
 //   }catch (error) {
 //     console.log("Creating Insert Form failed:", error);
 //     console.log("Error details:", error.message);
      };
   table.addRow(header);
   }
-  await buildupHeader(table,tranData,insertIcon);
-  await buildupMenu(table,data,tranData);
+  
+  await buildupHeader(table,tranData);
+  await buildupMenu(table,data,tranData,insertIcon);
   await buildupTable(table,data);
   
   async function iniInsertForm() {
@@ -329,8 +336,10 @@ await utils.insertTableEntry(
     data,
     tranData,
     insertEntry,
-    currDate
+    currDate,
+    insertIcon
   );
+  console.log(`Form Returned: ${isFormVisible}`);
 //   Safari.open("scriptable:///run/Transaction Log Widget"); 
 
 }
@@ -480,8 +489,8 @@ await utils.insertTableEntry(
     console.log("Error details:", error.message);
   }
   table.removeAllRows();
-      await buildupHeader(table,tranData,insertIcon);
-      await buildupMenu(table,data,tranData);
+      await buildupHeader(table,tranData);
+      await buildupMenu(table,data,tranData,insertIcon);
       await buildupTable(table,data);
       await table.reload();
       
@@ -516,8 +525,8 @@ button.onTap = async () => {
   await n.schedule();
   row_updated = true;
       table.removeAllRows();
-      await buildupHeader(table,tranData,insertIcon);
-      await buildupMenu(table,data,tranData);
+      await buildupHeader(table,tranData);
+      await buildupMenu(table,data,tranData,insertIcon);
       await buildupTable(table,data);
       await table.reload();
       await updateTransaction(tx);
@@ -554,8 +563,8 @@ button.onTap = async () => {
       
       
       table.removeAllRows();
-      await buildupHeader(table,tranData,insertIcon);
-      await buildupMenu(table,data,tranData);
+      await buildupHeader(table,tranData);
+      await buildupMenu(table,data,tranData,insertIcon);
       await buildupTable(table,data);
       await table.reload();
       // Call your Supabase delete function here
@@ -568,6 +577,9 @@ button.onTap = async () => {
   } 
   
   };
+  if(newTran){
+    await iniInsertForm();
+  }
   
   await table.present();
 }
@@ -584,6 +596,22 @@ try {
 //     " Authorization": `Bearer ${SUPABASE_KEY}`, // 🔹 safer convention
 //     "Content-Type": "application/json"
 //   };
+// Access query parameters
+let newTranStr = args.queryParameters.newTran
+
+// Convert back to boolean
+let newTran = newTranStr === "true"
+if(newTran){
+console.log("Received newTran:", newTran)
+let n = new Notification();
+  n.title = ` Transaction UI Table`;
+  n.body = `Opening Table with Insert Form `;
+//   from ${prevTran}
+  n.sound = "default"; // optional: "default", "alert", "complete", etc.
+  await n.schedule();
+  
+}
+  console.log(`Widget parameter (boolean):" ${newTran}`)
   const last_tran = await fetchLastTransaction();
   const data = await fetchTransactions();
 
@@ -595,7 +623,7 @@ try {
 console.log("Is Array?" + Array.isArray(data));
 
 
-  await buildTranTable(data,last_tran);
+  await buildTranTable(data,last_tran,newTran);
 //   await table.reload();
 
   

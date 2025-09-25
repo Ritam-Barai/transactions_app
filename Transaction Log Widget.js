@@ -1,6 +1,7 @@
 // Variables used by Scriptable.
 // These must be at the very top of the file. Do not edit.
 // icon-color: green; icon-glyph: user-lock;
+// share-sheet-inputs: plain-text, url;
 
 
 // Load from Keychain
@@ -17,6 +18,11 @@ widget.setPadding(5, 0, 0, 0);// //
 let new_tran = false;
 // 
 try {
+  
+  
+  
+  
+// await function getLastTran()
   // Setup GET request with Authorization
   const req = new Request(`${SUPABASE_URL}/last-transaction`);
   req.method = "GET";
@@ -71,7 +77,8 @@ if (maxTran > prevTran && (lastOp!=="UPDATE" || lastOp==="DELETE")) { // maxTran
   // Save new transaction timestamp
   fm.writeString(file, JSON.stringify(latest_txn));
 //    await sleep(500); 
-   Safari.open("scriptable:///run/Transaction UI Table");
+  new_tran = false;
+//    Safari.open("scriptable:///run/Transaction UI Table");
 } 
 else if (maxTran < prevTran) { // || lastOp==="DELETE"
   let n = new Notification();
@@ -117,11 +124,11 @@ if((lastCard !== data.prev_card) && lastOp==="UPDATE"){ // lastOp==="UPDATE" ||
   new_tran = false;
   }
 
-}
+
 
   
 
-
+}
   // Format numbers
   //const fmt = (n) => (typeof n === 'number' ? n.toFixed(2) : "0.00");
   // Optionally send a notification
@@ -304,19 +311,23 @@ let footer = widget.addStack();//
   updated.textColor = Color.gray();
 footer.addSpacer();
 // Display the widget
+widget.refreshAfterDate = new Date(Date.now() + 30*1000);
 
+// 
+// Safari.open("scriptable:///run/Transaction UI Table");// 
+// widget.refreshAfterDate = new Date(Date.now() + 30*1000);
+
+// Display the widget
+// Detect Lock Screen vs Home Screen
 } catch (e) {
 const err = widget.addText("❌ Error loading data");
 err.textColor = Color.red();
 err.font = Font.boldSystemFont(14);
 }
-// 
-// Safari.open("scriptable:///run/Transaction UI Table");
-widget.refreshAfterDate = new Date(Date.now() + 30*1000);
 
-// Display the widget
-// Detect Lock Screen vs Home Screen
+
 if (config.runsInWidget) {
+  
   if (config.runsInAccessoryWidget) {
     // LOCK SCREEN (Accessory widget)
     let accessory = new ListWidget()
@@ -328,7 +339,31 @@ if (config.runsInWidget) {
     let img = accessory.addImage(icon)
      img.imageSize = new Size(50, 50) // scale down for lock screen
     img.centerAlignImage()
+ 
+// args.widgetParameter is usually a single value
+// args.widgetParameters is an object (for multiple values)
+    
+//     if (typeof newTranInsert === "string") {
 
+
+
+
+
+    
+    /*if(newTranInsert){
+//   newTranInsert = newTranInsert === "true"  // convert to boolean
+  let n = new Notification();
+  n.title = `Transaction UI Tablr`;
+  n.body = `Insert Form Opening :${newTranInsert} `;
+//   from ${prevTran}
+  n.sound = "default"; // optional: "default", "alert", "complete", etc.
+  await n.schedule();
+  
+//  newTranInsert = false;
+
+  
+}*/
+//     console.log(`Widget parameter (boolean):" ${newTranInsert}`)
     Script.setWidget(accessory)
 /*let accessory = new ListWidget()
 
@@ -363,15 +398,41 @@ Script.setWidget(accessory)//
 
   } else {
     // HOME SCREEN WIDGET (your big transaction UI)
+    
     Script.setWidget(widget)
   }
+  
 } // // // 
 // else {
 //   
-//  await widget.presentSmall(); // adjust to .presentSmall() or .presentLarge() as needed
-if(!new_tran){ 
+//  await widget.presentSmall(); // adjust to .presentSmall() or .presentLarge() as needed// 
+// }
+
+let argsParam = args.queryParameters.param
+let newTranInsert = argsParam === "true";
+   // could be "true" / "false" string
+  if(newTranInsert) {
+    /*let n = new Notification();
+  n.title = `Opening Insert Form`;
+  n.body = `URL :${newTranInsert} `;
+//   from ${prevTran}
+  n.sound = "default"; // optional: "default", "alert", "complete", etc.
+  await n.schedule();*/
+  
+//   await sleep(100);
+  Safari.open(`scriptable:///run/Transaction%20UI%20Table?newTran=${newTranInsert}`);
+   new_tran = true;
+//    Script.complete();
+  }
+if(!new_tran){ // 
+  // 
  Safari.open("scriptable:///run/Transaction UI Table");
+  
 }
+
+
+
+
 // }
 /*
 async function loadAppIcon() {

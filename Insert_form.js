@@ -44,8 +44,10 @@ if (exists) {
 } else {
   console.log(`No entry found with id = ${serverRes.id}. Entry not yet stored!`)
 }
-*/
-   Safari.open("scriptable:///run/Transaction Log Widget"); 
+*/// // 
+ Safari.open("scriptable:///run/Transaction Log Widget");// // 
+// await sleep(2000);// 
+// Safari.open("scriptable:///run/Transaction UI Table");
 };
 
 async function pickTime(initialHour = 12, initialMin = 0) {
@@ -197,20 +199,21 @@ function convertToUTC(currDate){
   data,
   tranData,
   insertEntry,
-  currDate
+  currDate,
+  insertIcon
   ){
 
   insertEntry.date = convertToUTC(currDate);
   let isCredit = insertEntry.action === "credited" ? true : false;
-  console.log(JSON.stringify(insertEntry));
-let utils = importModule('Transaction UI Table');
-   let insertIcon;
+  console.log(JSON.stringify(insertEntry));// 
+// let utils = importModule('Transaction UI Table');
+//    let insertIcon;
   insertIcon = "🔼";
    table.removeAllRows();
-   buildTable(table);
-    buildupHeader(table,tranData,insertIcon);
-    buildupMenu(table,data,tranData);
-    buildupTable(table,data);
+   await buildTable(table);
+    await buildupHeader(table,tranData);
+    await buildupMenu(table,data,tranData,insertIcon);
+    await buildupTable(table,data);
   await table.reload();
 
   async function buildTable(table){
@@ -279,7 +282,8 @@ await insertTableEntry(table,
   data,
   tranData,
   insertEntry,
-  currDate
+  currDate,
+  insertIcon
   );
     };
   
@@ -326,7 +330,8 @@ await insertTableEntry(table,
   data,
   tranData,
   insertEntry,
-  currDate
+  currDate,
+  insertIcon
   );
     };
 
@@ -354,7 +359,8 @@ await insertTableEntry(table,
   data,
   tranData,
   insertEntry,
-  currDate
+  currDate,
+  insertIcon
   );
       }catch(e){};
     };
@@ -389,7 +395,7 @@ await insertTableEntry(table,
       await buildTable(table);
       await buildupHeader(table,tranData);
       await buildupMenu(table,data,tranData);
-      await buildupTable(table,data);
+      await builduptTable(table,data);
       await table.reload();
       console.log(insertEntry);
 */
@@ -400,7 +406,8 @@ await insertTableEntry(table,
   data,
   tranData,
   insertEntry,
-  currDate
+  currDate,
+  insertIcon
   );
     };
 
@@ -434,7 +441,8 @@ await insertTableEntry(table,
   data,
   tranData,
   insertEntry,
-  currDate
+  currDate,
+  insertIcon
   );
     };
 
@@ -451,8 +459,10 @@ await insertTableEntry(table,
       if (res === 0) {
         let parts = alert.textFieldValue(0).split(":");
         if (parts.length >= 2) {
-          currDate.hour = parseInt(parts[0]) || currDate.hour;
-          currDate.minute = parseInt(parts[1]) || currDate.minute;
+          currDate.hour = isNaN(parseInt(parts[0], 10)) ? currDate.hour : parseInt(parts[0], 10);
+
+          currDate.minute = isNaN(parseInt(parts[1], 10)) ? currDate.minute : parseInt(parts[1], 10);
+
         }
       }
       let UTC=convertToUTC(currDate);
@@ -473,7 +483,8 @@ await insertTableEntry(table,
   data,
   tranData,
   insertEntry,
-  currDate
+  currDate,
+  insertIcon
   );
     };
 
@@ -506,7 +517,8 @@ await insertTableEntry(table,
   data,
   tranData,
   insertEntry,
-  currDate
+  currDate,
+  insertIcon
   );
     };
 
@@ -524,13 +536,14 @@ await insertTableEntry(table,
       console.log("Cancelled");   
 //       isFormVisible = false;
       
-      insertIcon = "📝";
+      
       table.removeAllRows();
-       buildupHeader(table,tranData,insertIcon);
-       buildupMenu(table,data,tranData);
-       buildupTable(table,data);
+      insertIcon = "📝";
+       await buildupHeader(table,tranData);
+       await buildupMenu(table,data,tranData,insertIcon);
+       await buildupTable(table,data);
       await table.reload();
-
+      return true;
 //        return null;
       } catch (error) {
         console.error("Cancel button error:", error);
@@ -572,7 +585,8 @@ await insertTableEntry(table,
   data,
   tranData,
   insertEntry,
-  currDate
+  currDate,
+  insertIcon
   );
         }
         
@@ -602,7 +616,8 @@ await insertTableEntry(table,
   data,
   tranData,
   insertEntry,
-  currDate
+  currDate,
+  insertIcon
   );
           
 //           resolve(null); // Return null for invalid entry
@@ -638,7 +653,7 @@ await insertTableEntry(table,
   tranData,
   insertEntry,
   currDate,
-  utils,
+//   utils,
   insertIcon
   );
 
@@ -772,7 +787,7 @@ async function insertNewEntry(table,
   tranData,
   insertEntry,
   currDate,
-  utils,
+//   utils,
   insertIcon
   ){
     let updatedData = data;
@@ -806,7 +821,7 @@ let formattedLocalTime = localTimestamp.getFullYear() + "-" +
   String(localTimestamp.getDate()).padStart(2, "0") + "T" +
   String(localTimestamp.getHours()).padStart(2, "0") + ":" +
   String(localTimestamp.getMinutes()).padStart(2, "0") + ":" +
-  String(localTimestamp.getSeconds()).padStart(2, "0");
+  String(localTimestamp.getSeconds()).padStart(2, "0") ;
 
 console.log(formattedLocalTime);
   let newEntry = {
@@ -818,6 +833,8 @@ console.log(formattedLocalTime);
 };
 //   updatedData.push(newEntry);
   // Find index where new entry should be inserted
+updatedData = updatedData.filter(entry => !(entry.id === -1));
+
   let index = updatedData.findIndex(entry => new Date(entry.datetime) > new Date(formattedLocalTime));
 
   if (index === -1) {
@@ -860,20 +877,21 @@ summary = {
   console.log("Updated response:\n" + JSON.stringify(updatedData)); 
   console.log("Updated Last Tran:\n" + JSON.stringify(summary)); 
   table.removeAllRows();
-       buildupHeader(table,summary,insertIcon);
-       buildupMenu(table,updatedData,summary);
-       buildupTable(table,updatedData);
+       await buildupHeader(table,summary);
+       await buildupMenu(table,updatedData,summary,"📝");
+       await buildupTable(table,updatedData);
       await table.reload();
       let untimedEntry ={
         amount: parseFloat(insertEntry.amount),   // number instead of string
-  card: parseInt(insertEntry.card),
+  card: insertEntry.card,
   action: insertEntry.action ,
   date: insertEntry.date
       };
 //       let { date, ...untimedEntry } = insertEntry;
       console.log("Timeless entry:\n" + JSON.stringify(untimedEntry)); 
         let insertResponse = await insertTransaction(untimedEntry);
-         Safari.open("scriptable:///run/Transaction UI Table");
+//       await sleep(500);
+//       Safari.open("scriptable:///run/Transaction Log Widget");
 }
 
-module.exports = {insertTableEntry, iniCurrTime};
+module.exports = {insertTableEntry, iniCurrTime,insertNewEntry,insertTransaction};
