@@ -12,20 +12,22 @@ const SUPABASE_KEY = Keychain.get("SUPABASE_GET_HANDLERS_KEY");
 // Create widget
 let widget = new ListWidget();
 widget.backgroundColor = new Color("#FFFFFF",0.1);
-widget.setPadding(5, 0, 0, 0);
-widget.widgetURL = "scriptable:///run/Transaction UI Table";
+widget.setPadding(5, 0, 0, 0);// // 
+//  widget.url = "scriptable:///run/Transaction UI Table";
 let new_tran = false;
-
+// 
 try {
   // Setup GET request with Authorization
   const req = new Request(`${SUPABASE_URL}/last-transaction`);
+  req.method = "GET";
   req.headers = {
+    "apikey": SUPABASE_KEY,
     "Authorization": `Bearer ${SUPABASE_KEY}`,
     "Content-Type": "application/json"
   };
 
   const data = await req.loadJSON();
-//   console.log(data);
+   console.log(data);
   // Extract date and time from timestamp
 let maxTran = data.max_last_tran;
 let lastOp = data.last_op;
@@ -65,11 +67,11 @@ if (maxTran > prevTran && (lastOp!=="UPDATE" || lastOp==="DELETE")) { // maxTran
   n.body = `${data.prev_is_credit ? "Credit" : "Debit"}: ₹${data.prev_tran} on Card ${data.prev_card}`;
   n.sound = "default"; // optional: "default", "alert", "complete", etc.
   await n.schedule();
- new_tran = true;
+  new_tran = true;
   // Save new transaction timestamp
   fm.writeString(file, JSON.stringify(latest_txn));
-  await sleep(500); 
-  
+//    await sleep(500); 
+   Safari.open("scriptable:///run/Transaction UI Table");
 } 
 else if (maxTran < prevTran) { // || lastOp==="DELETE"
   let n = new Notification();
@@ -304,14 +306,12 @@ footer.addSpacer();
 // Display the widget
 
 } catch (e) {
-  const err = widget.addText("❌ Error loading data");
-  err.textColor = Color.red();
-  err.font = Font.boldSystemFont(14);
+const err = widget.addText("❌ Error loading data");
+err.textColor = Color.red();
+err.font = Font.boldSystemFont(14);
 }
-if(!new_tran){ 
-//      Safari.open("scriptable:///run/Transaction UI Table");
-}
-Safari.open("scriptable:///run/Transaction UI Table");
+// 
+// Safari.open("scriptable:///run/Transaction UI Table");
 widget.refreshAfterDate = new Date(Date.now() + 30*1000);
 
 // Display the widget
@@ -321,7 +321,9 @@ if (config.runsInWidget) {
 // else {
 //   
 //  await widget.presentSmall(); // adjust to .presentSmall() or .presentLarge() as needed
-   
+if(!new_tran){ 
+ Safari.open("scriptable:///run/Transaction UI Table");
+}
 // }
 
 Script.complete();

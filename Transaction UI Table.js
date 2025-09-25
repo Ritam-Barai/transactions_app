@@ -20,6 +20,7 @@ async function fetchTransactions() {
   const url = `${SUPABASE_URL}/today-transactions`;
 
   let req = new Request(url);
+  req.method = "GET";
   req.headers = {
     "apikey": SUPABASE_KEY,
     "Authorization": `Bearer ${SUPABASE_KEY}`,
@@ -37,6 +38,7 @@ let file = fm.joinPath(dir, "last_tran.txt");
 let tranData = null;
 
 if (fm.fileExists(file)) {
+  console.log("Cache Found");
    tranFile = fm.readString(file);
    tranData = JSON.parse(tranFile);
 //    prevTran = tranData.total;
@@ -125,7 +127,8 @@ async function updateTransaction(tx) {
 
   let response = await req.load();
   console.log("Server response:", response);
-  Safari.open("scriptable:///run/Transaction Log Widget"); // reload
+  Safari.open("scriptable:///run/Transaction Log Widget"); // reload// 
+// Script.complete();
 }
 
 // === Delete transaction ===
@@ -145,7 +148,8 @@ async function deleteTransaction(tx) {
   let response = await req.load();
   console.log("Server response:", response);
 
-  Safari.open("scriptable:///run/Transaction Log Widget"); // reload
+  Safari.open("scriptable:///run/Transaction Log Widget"); // reload// 
+// Script.complete();
 }// /// 
 // // insert caching for offline connectivity
 // // 
@@ -274,9 +278,9 @@ table.removeAllRows();
      };
   table.addRow(header);
   }
-  buildupHeader(table,tranData,insertIcon);
-  buildupMenu(table,data,tranData);
-  buildupTable(table,data);
+  await buildupHeader(table,tranData,insertIcon);
+  await buildupMenu(table,data,tranData);
+  await buildupTable(table,data);
   
   async function iniInsertForm() {
   let utils = importModule('Insert_form');
@@ -323,6 +327,7 @@ await utils.insertTableEntry(
     insertEntry,
     currDate
   );
+//   Safari.open("scriptable:///run/Transaction Log Widget"); 
 
 }
 
@@ -471,9 +476,9 @@ await utils.insertTableEntry(
     console.log("Error details:", error.message);
   }
   table.removeAllRows();
-      buildupHeader(table,tranData,insertIcon);
-      buildupMenu(table,data,tranData);
-      buildupTable(table,data);
+      await buildupHeader(table,tranData,insertIcon);
+      await buildupMenu(table,data,tranData);
+      await buildupTable(table,data);
       await table.reload();
       
 };
@@ -507,9 +512,9 @@ button.onTap = async () => {
   await n.schedule();
   row_updated = true;
       table.removeAllRows();
-      buildupHeader(table,tranData,insertIcon);
-      buildupMenu(table,data,tranData);
-      buildupTable(table,data);
+      await buildupHeader(table,tranData,insertIcon);
+      await buildupMenu(table,data,tranData);
+      await buildupTable(table,data);
       await table.reload();
       await updateTransaction(tx);
    }catch (error) {
@@ -545,9 +550,9 @@ button.onTap = async () => {
       
       
       table.removeAllRows();
-      buildupHeader(table,tranData,insertIcon);
-      buildupMenu(table,data,tranData);
-      buildupTable(table,data);
+      await buildupHeader(table,tranData,insertIcon);
+      await buildupMenu(table,data,tranData);
+      await buildupTable(table,data);
       await table.reload();
       // Call your Supabase delete function here
      await deleteTransaction(tx);
@@ -565,8 +570,8 @@ button.onTap = async () => {
 // === MAIN ===// 
 // let data = await fetchTransactions();// 
 // await buildTranTable(data);
-
-module.exports = {fetchLastTransaction,fetchTransactions};
+// 
+// module.exports = {fetchLastTransaction,fetchTransactions};// // 
 try {
   // Setup GET request with Authorization
   
@@ -590,8 +595,7 @@ console.log("Is Array?" + Array.isArray(data));
 //   await table.reload();
 
   
-} catch (e) {
-  console.error("Fetch error:", e);
+} catch (e) {// 
+console.error("Fetch error:", e);
 }
-// 
  Script.complete();
