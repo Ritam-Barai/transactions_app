@@ -196,11 +196,13 @@ function convertToUTC(currDate){
   buildupHeader,
   buildupMenu,
   buildupTable,
+  buildupLastTran,
   data,
   tranData,
   insertEntry,
   currDate,
-  insertIcon
+  insertIcon,
+  justForm
   ){
 
   insertEntry.date = convertToUTC(currDate);
@@ -210,16 +212,32 @@ function convertToUTC(currDate){
 //    let insertIcon;
   insertIcon = "🔼";
    table.removeAllRows();
-   await buildTable(table);
+   
+  
+  if(!justForm){
+    await buildTable(table,justForm);
     await buildupHeader(table,tranData);
     await buildupMenu(table,data,tranData,insertIcon);
     await buildupTable(table,data);
+    
+    }else{
+      await buildupHeader(table,tranData);
+      await buildTable(table,justForm);
+    }
+    await buildupLastTran(table,tranData);
   await table.reload();
 
-  async function buildTable(table){
-    
+  async function buildTable(table,justForm){
+    if(justForm){
+    let tpadding = new UITableRow();
+  tpadding.isHeader = true;
+  tpadding.height = 30;
+  table.addRow(tpadding);
+  }
     let header = new UITableRow();
     header.isHeader = true;
+    
+    
     let insertTitle = header.addText("Insert New Entry");
     insertTitle.centerAligned();
     insertTitle.titleFont = Font.boldSystemFont(25);
@@ -241,6 +259,16 @@ function convertToUTC(currDate){
 
     let row1 = new UITableRow();
     row1.height = 35;
+    row1.dismissOnSelect = false;
+
+// Display combined card + amount info in row// 
+// let displayText = `${insertEntry.card == "0000" ? "----" : insertEntry.card} | ₹${insertEntry.amount}`;// 
+// let cell = row1.addText(displayText);// 
+// cell.centerAligned();
+
+
+    
+    
     let cardCell = row1.addButton(insertEntry.card == "0000"? "----": insertEntry.card);
     cardCell.centerAligned();
 
@@ -248,7 +276,7 @@ function convertToUTC(currDate){
       let alert = new Alert();
       alert.title = "Enter Last 4 Digits";
       alert.message = "Card number must be exactly 4 digits.";
-      alert.addTextField(`Card: ${insertEntry.card=="0000"?"0000":insertEntry.card}`);
+      alert.addTextField(`Previous Card: ${insertEntry.card=="0000"?tranData.prevCard:insertEntry.card}`);
       alert.addAction("Save");
       alert.addCancelAction("Cancel");
 
@@ -279,11 +307,13 @@ await insertTableEntry(table,
   buildupHeader,
   buildupMenu,
   buildupTable,
+  buildupLastTran,
   data,
   tranData,
   insertEntry,
   currDate,
-  insertIcon
+  insertIcon,
+  justForm
   );
     };
   
@@ -294,7 +324,7 @@ await insertTableEntry(table,
       let alert = new Alert();
       alert.title = "Enter Amount";
       alert.message = "Enter a number (integer or decimal). It will always be stored with 2 decimal places.";
-      alert.addTextField(`Amount: ${insertEntry.amount=="0.00"?"0.00":insertEntry.amount}`);
+      alert.addTextField(`Previous Amount: ${insertEntry.amount=="0.00"?tranData.prevAmt:insertEntry.amount}`);
       alert.addAction("Save");
       alert.addCancelAction("Cancel");
 
@@ -327,11 +357,13 @@ await insertTableEntry(table,
   buildupHeader,
   buildupMenu,
   buildupTable,
+  buildupLastTran,
   data,
   tranData,
   insertEntry,
   currDate,
-  insertIcon
+  insertIcon,
+  justForm
   );
     };
 
@@ -356,14 +388,111 @@ await insertTableEntry(table,
   buildupHeader,
   buildupMenu,
   buildupTable,
+  buildupLastTran,
   data,
   tranData,
   insertEntry,
   currDate,
-  insertIcon
+  insertIcon,
+  justForm
   );
       }catch(e){};
     };
+    // Make the entire row tappable
+row1.onSelect = async () => {
+  while(true){
+    let alert = new Alert();
+  alert.title = "Enter Transaction Details";
+ console.log(tranData.prev_card)
+  // Card text field
+  alert.addTextField(
+    `Previous Card: ${insertEntry.card=="0000"?tranData.prevCard:insertEntry.card}`, insertEntry.card == "0000" ? "" : insertEntry.card
+  );
+
+  // Amount text field
+  alert.addTextField(
+    `Previous Amount: ${insertEntry.amount=="0.00"?tranData.prevAmt:insertEntry.amount}`, insertEntry.amount == "0.00" ? "" : insertEntry.amount
+  );
+  alert.addAction(isCredit? "< Credit >": "< Debit >")
+  alert.addAction("Save");
+  alert.addCancelAction("Cancel");
+
+  let choice = await alert.presentAlert();
+  console.log(choice);
+  if (choice === -1) {
+    break;
+  }else{
+    let cardVal = alert.textFieldValue(0).trim();
+    let amountVal = alert.textFieldValue(1).trim();
+
+    let validCard = true;
+    let validAmt = true;
+
+    // Validate card digits
+    if (!/^\d{4}$/.test(cardVal) && cardVal !=="") {
+      let error = new Alert();
+      error.title = "Invalid Card";
+      error.message = "Card number must be exactly 4 digits.";
+      error.addAction("OK");
+      await error.present();
+      validCard = false;
+    }
+
+    // Validate amount
+    let formattedAmt = "0.00"; // default if blank
+
+if (amountVal === "") {
+  // If blank, assign default 0.00
+  formattedAmt = "0.00";
+} else if (isNaN(amountVal)) {
+  // Invalid number
+  let error = new Alert();
+  error.title = "Invalid Amount";
+  error.message = "Please enter a valid number (e.g., 10 or 10.50).";
+  error.addAction("OK");
+  await error.present();
+  validAmt = false;
+} else {
+  // Valid number, format with 2 decimals
+  formattedAmt = parseFloat(amountVal).toFixed(2);
+}
+
+    if (validCard && validAmt) {
+      // Save validated values
+      insertEntry.card = (cardVal ==="")?"0000":cardVal;
+//       insertEntry.amount = amountVal? amountVal:0.00;
+      insertEntry.amount = formattedAmt;
+     
+      // Update row display
+//       cell.title = `${insertEntry.card} | ₹${insertEntry.amount}`;
+      }
+    if (choice === 0) {
+    isCredit =!isCredit;
+    insertEntry.action = isCredit? "credited":"debited";
+    continue;
+    }else if(choice === 1){
+     insertEntry.action = isCredit? "credited":"debited";
+      break;
+       }
+    }
+  }
+      // Rebuild table
+      await insertTableEntry(
+        table,
+        buildupHeader,
+        buildupMenu,
+        buildupTable,
+        buildupLastTran,
+        data,
+        tranData,
+        insertEntry,
+        currDate,
+        insertIcon,
+  justForm
+      );
+   
+};
+
     table.addRow(row1);
 
     // Row 2: Date + Time
@@ -403,11 +532,13 @@ await insertTableEntry(table,
   buildupHeader,
   buildupMenu,
   buildupTable,
+  buildupLastTran,
   data,
   tranData,
   insertEntry,
   currDate,
-  insertIcon
+  insertIcon,
+  justForm
   );
     };
 
@@ -438,11 +569,13 @@ await insertTableEntry(table,
   buildupHeader,
   buildupMenu,
   buildupTable,
+  buildupLastTran,
   data,
   tranData,
   insertEntry,
   currDate,
-  insertIcon
+  insertIcon,
+  justForm
   );
     };
 
@@ -480,11 +613,13 @@ await insertTableEntry(table,
   buildupHeader,
   buildupMenu,
   buildupTable,
+  buildupLastTran,
   data,
   tranData,
   insertEntry,
   currDate,
-  insertIcon
+  insertIcon,
+  justForm
   );
     };
 
@@ -514,11 +649,13 @@ await insertTableEntry(table,
   buildupHeader,
   buildupMenu,
   buildupTable,
+  buildupLastTran,
   data,
   tranData,
   insertEntry,
   currDate,
-  insertIcon
+  insertIcon,
+  justForm
   );
     };
 
@@ -539,9 +676,13 @@ await insertTableEntry(table,
       
       table.removeAllRows();
       insertIcon = "📝";
+      justForm = false;
        await buildupHeader(table,tranData);
        await buildupMenu(table,data,tranData,insertIcon);
        await buildupTable(table,data);
+      if(!justForm){
+    await buildupLastTran(table,tranData);
+  }
       await table.reload();
       return true;
 //        return null;
@@ -582,11 +723,13 @@ await insertTableEntry(table,
   buildupHeader,
   buildupMenu,
   buildupTable,
+  buildupLastTran,
   data,
   tranData,
   insertEntry,
   currDate,
-  insertIcon
+  insertIcon,
+  justForm
   );
         }
         
@@ -613,11 +756,13 @@ await insertTableEntry(table,
   buildupHeader,
   buildupMenu,
   buildupTable,
+  buildupLastTran,
   data,
   tranData,
   insertEntry,
   currDate,
-  insertIcon
+  insertIcon,
+  justForm
   );
           
 //           resolve(null); // Return null for invalid entry
@@ -649,12 +794,14 @@ await insertTableEntry(table,
   buildupHeader,
   buildupMenu,
   buildupTable,
+  buildupLastTran,
   data,
   tranData,
   insertEntry,
   currDate,
 //   utils,
-  insertIcon
+  insertIcon,
+  justForm
   );
 
 }
@@ -783,16 +930,27 @@ async function insertNewEntry(table,
   buildupHeader,
   buildupMenu,
   buildupTable,
+  buildupLastTran,
   data,
   tranData,
   insertEntry,
   currDate,
 //   utils,
-  insertIcon
+  insertIcon,
+  justForm
   ){
+    console.log(`New Data Entry Received: ${JSON.stringify(insertEntry)} `);
     let updatedData = data;
-    console.log("Last Tran:\n" + JSON.stringify(tranData)); 
-    
+    console.log("Last Tran:\n" + JSON.stringify(tranData));
+    let untimedEntry ={
+        amount: parseFloat(insertEntry.amount),   // number instead of string
+  card: insertEntry.card,
+  action: insertEntry.action ,
+  date: insertEntry.date
+      };
+    if(justForm){
+      let insertResponse = await insertTransaction(untimedEntry);
+    }
   
   let localTimestamp = new Date(
   currDate.year,
@@ -876,22 +1034,24 @@ summary = {
   
   console.log("Updated response:\n" + JSON.stringify(updatedData)); 
   console.log("Updated Last Tran:\n" + JSON.stringify(summary)); 
+  
   table.removeAllRows();
        await buildupHeader(table,summary);
        await buildupMenu(table,updatedData,summary,"📝");
        await buildupTable(table,updatedData);
+      if(!justForm){
+    await buildupLastTran(table,tranData);
+  }
       await table.reload();
-      let untimedEntry ={
-        amount: parseFloat(insertEntry.amount),   // number instead of string
-  card: insertEntry.card,
-  action: insertEntry.action ,
-  date: insertEntry.date
-      };
+      
 //       let { date, ...untimedEntry } = insertEntry;
       console.log("Timeless entry:\n" + JSON.stringify(untimedEntry)); 
-        let insertResponse = await insertTransaction(untimedEntry);
+         if(!justForm){
+           let insertResponse = await insertTransaction(untimedEntry);
+        justForm = false;
+        }
 //       await sleep(500);
-//       Safari.open("scriptable:///run/Transaction Log Widget");
+//        Safari.open("scriptable:///run/Transaction Log Widget");
 }
 
 module.exports = {insertTableEntry, iniCurrTime,insertNewEntry,insertTransaction};

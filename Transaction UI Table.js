@@ -1,6 +1,7 @@
 // Variables used by Scriptable.
 // These must be at the very top of the file. Do not edit.
 // icon-color: deep-green; icon-glyph: dollar-sign;
+// share-sheet-inputs: file-url, plain-text, url;
 //ormatting may be inconsistent from source
 // 📌 Daily Transactions Viewer - Scriptable
 
@@ -71,6 +72,8 @@ async function editTransaction(tx) {
     
     if (choice === 0) { // Save
       let newCard = alert.textFieldValue(0);
+      newCard = String(newCard).padStart(4, "0");
+ 
       let newAmount = alert.textFieldValue(1);
      if(newCard == tx.card && newAmount == tx.amount){
       let alert = new Alert();
@@ -188,13 +191,14 @@ if (exists) {
 };*/
 let insertIcon = "📝";
 //  === Build the UI table ===
-async function buildTranTable(data,tranData,newTran) {
+async function buildTranTable(data,tranData,newTran,newEntry) {
   let table = new UITable();
   table.showSeparators = true;
   
   const dt = new Date(tranData.time);
   tranDate = dt.toLocaleDateString();
   let isFormVisible = false;
+  let justForm = false;
 //   let iconSymbol = SFSymbol.named("square.and.pencil"); // SF Symbol
 //     let icon = iconSymbol.image;
    
@@ -233,6 +237,7 @@ async function buildTranTable(data,tranData,newTran) {
 //   totalRow.titleFont = Font.boldSystemFont(30);
   netCredit.titleColor = Color.green() ;
   table.addRow(subtotal);
+  
   };
 async function buildupMenu(table,data,tranData,insertIcon){
   if(insertIcon === "🔼"){
@@ -261,6 +266,7 @@ let insertButton = header.addButton(insertIcon);
 insertButton.rightAligned();
 insertButton.Font = Font.boldSystemFont(30);
 insertButton.onTap = async () => {
+  justForm = false;
   console.log(`Form visible: ${isFormVisible}`);
 //   isFormVisible = true;// 
 //  insertIcon = "🔼";
@@ -278,8 +284,12 @@ isFormVisible = false;
 insertIcon = "📝";
 table.removeAllRows();
       await buildupHeader(table,tranData);
+      
       await buildupMenu(table,data,tranData,insertIcon);
       await buildupTable(table,data);
+      if(!justForm){
+    await buildupLastTran(table,tranData);
+  }
       await table.reload();
 }
 //   }catch (error) {
@@ -288,10 +298,86 @@ table.removeAllRows();
      };
   table.addRow(header);
   }
+ async function buildupLastTran(table,tranData){
+  
+  let padding = new UITableRow();
+  padding.isHeader = true;
+  padding.height = 20;
+  table.addRow(padding);
+  
+// Create a new table row for "Last Spend:"
+let row5 = new UITableRow();
+row5.isHeader = true;
+row5.height = 30; // adjust height as needed
+let row5Cell = row5.addText("Last Spend:");
+row5Cell.titleColor = Color.gray();
+row5Cell.titleFont = Font.mediumMonospacedSystemFont(12);
+row5Cell.centerAligned();
+table.addRow(row5);
+
+
+// Last transaction: type and amount
+const prevType = (tranData.prevIsCredit ==="true") ? "Credit" : "Debit";
+const prevColor = (tranData.prevIsCredit ==="true") ? Color.green() : Color.red();
+const dt = new Date(tranData.time);
+  let tranDate = dt.toLocaleDateString()??'N/A'; // "7/7/2025" (or format based on locale)
+  let tranTime = dt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })??'N/A'; // "18:42"
+
+
+let row7 = new UITableRow();
+row7.height = 30;
+let cardCell = row7.addText(`💳${tranData.prevCard}`);
+cardCell.titleFont = Font.mediumMonospacedSystemFont(13);
+cardCell.leftAligned(); // align left// 
+// let row7Cell1 = row7.addText(`${prevType}    :       `);
+let row7Cell1 = row7.addText(`${prevType}:`);
+row7Cell1.titleFont = Font.semiboldSystemFont(13);
+row7Cell1.rightAligned();// 
+// let row7pad =row7.addText(``);// 
+// row7pad.centerAligned();
+let row7Cell2 = row7.addText(`₹${tranData.prevAmt}`);
+row7Cell2.titleFont = Font.boldSystemFont(13);
+row7Cell2.titleColor = prevColor;
+row7Cell2.leftAligned();
+
+let timeCell = row7.addText(`🕒${tranTime ?? 'N/A'}`);
+timeCell.titleFont = Font.mediumMonospacedSystemFont(13);
+timeCell.rightAligned(); // align right// 
+// table.addRow(row6);
+
+table.addRow(row7);
+
+let bpadding = new UITableRow();
+  bpadding.isHeader = true;
+  bpadding.height = 20;
+  table.addRow(bpadding);
+/*
+// Card number and transaction time row
+let row6 = new UITableRow();
+row6.height = 30;
+
+// Add Card cell
+let cardCell = row6.addText(`💳 ${tranData.prevCard}`);
+cardCell.titleFont = Font.mediumMonospacedSystemFont(15);
+cardCell.centerAligned(); // align left
+
+// Add spacer between card and time// 
+// row6.addSpacer(1);
+
+// Add Time cell
+let timeCell = row6.addText(`🕒 ${tranTime ?? 'N/A'}`);
+timeCell.titleFont = Font.mediumMonospacedSystemFont(15);
+timeCell.centerAligned(); // align right
+table.addRow(row6);*/
+  
+}
   
   await buildupHeader(table,tranData);
   await buildupMenu(table,data,tranData,insertIcon);
   await buildupTable(table,data);
+  if(!justForm){
+    await buildupLastTran(table,tranData);
+  }
   
   async function iniInsertForm() {
   let utils = importModule('Insert_form');
@@ -303,6 +389,7 @@ table.removeAllRows();
     action: "debited",
     date: ""
   };
+//   console.log(`Form Initial: ${insertEntry}`);
   
 /* let resultEntry = null;
 
@@ -333,11 +420,13 @@ await utils.insertTableEntry(
     buildupHeader,
     buildupMenu,
     buildupTable,
+    buildupLastTran,
     data,
     tranData,
     insertEntry,
     currDate,
-    insertIcon
+    insertIcon,
+  justForm
   );
   console.log(`Form Returned: ${isFormVisible}`);
 //   Safari.open("scriptable:///run/Transaction Log Widget"); 
@@ -442,6 +531,9 @@ await utils.insertTableEntry(
   async function buildupTable(table,data){
   // Data rows
   for (let i = data.length - 1; i >= 0; i--) {
+    data[i].card = String(data[i].card).padStart(4, "0");
+//     data[i].amount
+ 
     let tx = data[i];
     // your code here
 
@@ -490,8 +582,14 @@ await utils.insertTableEntry(
   }
   table.removeAllRows();
       await buildupHeader(table,tranData);
+      if(!justForm){
+    await buildupLastTran(table,tranData);
+  }
       await buildupMenu(table,data,tranData,insertIcon);
       await buildupTable(table,data);
+      if(!justForm){
+    await buildupLastTran(table,tranData);
+  }
       await table.reload();
       
 };
@@ -528,6 +626,9 @@ button.onTap = async () => {
       await buildupHeader(table,tranData);
       await buildupMenu(table,data,tranData,insertIcon);
       await buildupTable(table,data);
+      if(!justForm){
+    await buildupLastTran(table,tranData);
+  }
       await table.reload();
       await updateTransaction(tx);
    }catch (error) {
@@ -566,6 +667,10 @@ button.onTap = async () => {
       await buildupHeader(table,tranData);
       await buildupMenu(table,data,tranData,insertIcon);
       await buildupTable(table,data);
+      if(!justForm){
+    await buildupLastTran(table,tranData);
+  }
+  
       await table.reload();
       // Call your Supabase delete function here
      await deleteTransaction(tx);
@@ -578,7 +683,26 @@ button.onTap = async () => {
   
   };
   if(newTran){
+    justForm = true;
     await iniInsertForm();
+  }
+   else if(newEntry){
+      let utils = importModule('Insert_form');
+  let currDate = await utils.iniCurrTime();
+    await utils.insertNewEntry(
+    table,
+    buildupHeader,
+    buildupMenu,
+    buildupTable,
+    buildupLastTran,
+    data,
+    tranData,
+    newEntry,
+    currDate,
+    insertIcon,
+  justForm
+  );
+    
   }
   
   await table.present();
@@ -588,6 +712,8 @@ button.onTap = async () => {
 // await buildTranTable(data);
 // 
 // module.exports = {fetchLastTransaction,fetchTransactions};// // 
+
+
 try {
   // Setup GET request with Authorization
   
@@ -596,22 +722,37 @@ try {
 //     " Authorization": `Bearer ${SUPABASE_KEY}`, // 🔹 safer convention
 //     "Content-Type": "application/json"
 //   };
-// Access query parameters
-let newTranStr = args.queryParameters.newTran
-
+// Access query parameters// 
+ let newTranReq = args.queryParameters.newTran;// 
+ let newEntry = args.shortcutParameter;
+console.log(`Parameter: ${newTranReq} & ${newEntry}`)
 // Convert back to boolean
-let newTran = newTranStr === "true"
-if(newTran){
-console.log("Received newTran:", newTran)
+let newTran = newTranReq === "true";
+if(newTran){// 
+// console.log("Received newTran:", newTran)
 let n = new Notification();
-  n.title = ` Transaction UI Table`;
+n.title = ` Transaction UI Table`;
+//   n.title = `Parameter: ${newTranReq} & ${newEntry}`;
   n.body = `Opening Table with Insert Form `;
+//   n.body = `${JSON.stringify(newTranStr)} `;
 //   from ${prevTran}
   n.sound = "default"; // optional: "default", "alert", "complete", etc.
   await n.schedule();
-  
-}
   console.log(`Widget parameter (boolean):" ${newTran}`)
+}
+else if(newEntry){
+  let n = new Notification();
+n.title = ` New External Transaction Registry`;// 
+// n.title = `Parameter: ${newTranReq} & ${newEntry}`;
+//   n.body = `Opening Table with Insert Form `;
+//   n.body = `${JSON.stringify(newTranStr)} `;
+n.body = `Card ${newEntry.card} ${newEntry.action} with ₹${newEntry.amount} on ${newEntry.date}`;
+//   from ${prevTran}
+  n.sound = "default"; // optional: "default", "alert", "complete", etc.
+  await n.schedule();
+//   console.log(`Widget parameter (boolean):" ${newTran}`)
+}
+  
   const last_tran = await fetchLastTransaction();
   const data = await fetchTransactions();
 
@@ -623,7 +764,7 @@ let n = new Notification();
 console.log("Is Array?" + Array.isArray(data));
 
 
-  await buildTranTable(data,last_tran,newTran);
+   await buildTranTable(data,last_tran,newTran,newEntry);
 //   await table.reload();
 
   

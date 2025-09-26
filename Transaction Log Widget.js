@@ -37,6 +37,7 @@ try {
   // Extract date and time from timestamp
 let maxTran = data.max_last_tran;
 let lastOp = data.last_op;
+data.prev_card = String(data.prev_card).padStart(4, "0");
 let tranDate = "N/A";
 let tranTime = "N/A";
 // Load previously stored transaction timestamp
@@ -50,8 +51,10 @@ if (fm.fileExists(file)) {
    tranFile = fm.readString(file);
    tranData = JSON.parse(tranFile);
    prevTran = tranData.time;
+  tranData.prevCard = String(tranData.prevCard).padStart(4, "0");
+ 
    lastCard = tranData.prevCard;
-  console.log(tranData);
+   console.log(tranData);
 }
 
 console.log(`Last Operation: ${lastOp}`);
@@ -65,6 +68,8 @@ let latest_txn ={
   netCredit: data.total_credit ?? 0.00,
   netDebit: data.total_debit ?? 0.00,
   prevCard: data.prev_card ?? lastCard,
+  prevAmt: data.prev_tran ?? 0.00,
+  prevIsCredit: (data.prev_is_credit ?? false)?"true":"false",
   time: maxTran
 };
 if (maxTran > prevTran && (lastOp!=="UPDATE" || lastOp==="DELETE")) { // maxTran && || lastOp==="INSERT"
@@ -327,6 +332,7 @@ err.font = Font.boldSystemFont(14);
 
 
 if (config.runsInWidget) {
+//   widget.refreshAfterDate = new Date(Date.now());
   
   if (config.runsInAccessoryWidget) {
     // LOCK SCREEN (Accessory widget)
