@@ -31,6 +31,35 @@ async function fetchTransactions() {
   return await req.loadJSON();
 }
 
+async function fetchSortedTransactions(isAsc = true, isTimeSort = true, filterType = "all") {
+  // build query string with defaults
+
+  /*const params = new URLSearchParams({
+    isAsc: isAsc.toString(),
+    isTimeSort: isTimeSort.toString()
+  });
+  console.log(params)
+
+  const url = `${SUPABASE_URL}/today-transactions?${params.toString()}`;*/
+filterType = (filterType === ("Cr | Db" || "all"))?"all": filterType;
+console.log(filterType)
+let queryString = `isAsc=${isAsc ? "true" : "false"}&isTimeSort=${isTimeSort ? "true" : "false"}&filterType=${filterType}`;
+
+// Full URL
+const url = `${SUPABASE_URL}/today-transactions?${queryString}`;
+ console.log(url);
+  let req = new Request(url);
+  req.method = "GET";
+  req.headers = {
+    "apikey": SUPABASE_KEY,
+    "Authorization": `Bearer ${SUPABASE_KEY}`,
+    "Content-Type": "application/json"
+  };
+
+  return await req.loadJSON();
+}
+
+
 async function fetchLastTransaction() {
 //   const today = new Date().toISOString().split("T")[0]; // YYYY-MM-DD
 let fm = FileManager.local();
@@ -199,6 +228,18 @@ async function buildTranTable(data,tranData,newTran,newEntry) {
   tranDate = dt.toLocaleDateString();
   let isFormVisible = false;
   let justForm = false;
+  let sortAsc = true;
+  let isTimeSort = true;
+  let timeSortIcon = isTimeSort ? (!sortAsc ? "⬆️" : "⬇️") : "⏯️";
+let amtSortIcon = isTimeSort ? "⏯️" : (sortAsc ? "⬆️" : "⬇️");
+let actionStates = [ "Cr | Db","Cr", "Db"]
+let stateIndex = 0   // start at Cr
+const uniqueCards = [...new Set(data.map(item => item.card))].map(c => 
+  String(c).padStart(4, "0")
+);
+
+console.log(uniqueCards); // ["1234", "5678", "9999"]
+
 //   let iconSymbol = SFSymbol.named("square.and.pencil"); // SF Symbol
 //     let icon = iconSymbol.image;
    
@@ -253,11 +294,47 @@ async function buildupMenu(table,data,tranData,insertIcon){
   
   // Header row
   let header = new UITableRow();
+//   header.rowSpacing = 0;
   header.isHeader = true;
-  header.addText("Amount");
-  header.addText("Cr").centerAligned();;
-  header.addText("Card");
-  header.addText("Time").centerAligned();
+  
+  header.addText("Amount").leftAligned();
+  
+//  amtVal.widthWeight = 0.1;
+//  amtVal.cellSpacing = 1;
+  
+ let tranType = header.addText(actionStates[stateIndex]).centerAligned();// 
+//  header.addText("").centerAligned();
+  header.addText("Card").centerAligned();// 
+// header.addText("").rightAligned();
+  header.addText("Time ").rightAligned();
+  
+  
+  
+  // Helper to refresh button labels/icons
+async function refreshButtons() {
+  timeSortIcon = isTimeSort ? (!sortAsc ? "⬆️" : "⬇️") : "⏸️";
+  amtSortIcon = !isTimeSort ? (sortAsc ? "⬆️" : "⬇️") : "⏸️";
+
+  timeSort.title = timeSortIcon;
+  amtSort.title = amtSortIcon;
+//   console.log(sortAsc + isTimeSort)
+  try{
+  const sortData = await fetchSortedTransactions(sortAsc, isTimeSort,actionStates[stateIndex]);
+  console.log(sortData);
+  
+  table.removeAllRows();
+      await buildupHeader(table,tranData);
+      
+      await buildupMenu(table,sortData,tranData,insertIcon);
+      await buildupTable(table,sortData);
+      if(!justForm){
+    await buildupLastTran(table,tranData);
+  }
+  await table.reload(); // refresh UI
+ }catch(e){
+  console.error("Fetch error:", e);
+};
+}
 //   header.addText("×").rightAligned();// 
 // let trashSymbol = SFSymbol.named("trash.fill"); // SF Symbol// 
 // let trashImg = trashSymbol.image; // UIImage// 
@@ -297,8 +374,91 @@ table.removeAllRows();
 //     console.log("Error details:", error.message);
      };
   table.addRow(header);
+  
+  let ctlPnl = new UITableRow();
+//   header.rowSpacing = 0;
+  ctlPnl.isHeader = true;
+  ctlPnl.height = 30;
+  let amtSort = ctlPnl.addButton(amtSortIcon);
+  amtSort.centerAligned();
+//   let c1= header.addCell(amtSort);
+//   amtSort.widthWeight = 0;
+  amtSort.onTap = async () => {
+    if (!isTimeSort) {
+    // Already active → just toggle up/down
+    sortAsc = !sortAsc;
+  } else {
+    // Switch from time → make other sort active
+    isTimeSort = false;
+    sortAsc = true; // reset to default "up" when activated
   }
- async function buildupLastTran(table,tranData){
+  await refreshButtons();
+  };
+  
+  let tglAction = ctlPnl.addButton("🔃");
+  tglAction.centerAligned();
+//   tglAction.widthWeight = 0;
+  tglAction.font = Font.systemFont(8);
+  tglAction.onTap = async () => {
+ stateIndex = (stateIndex + 1) % actionStates.length;
+console.log(actionStates[stateIndex])
+//   tranType.title = actionStates[stateIndex];
+  try{
+  const sortData = await fetchSortedTransactions(sortAsc, isTimeSort,actionStates[stateIndex]);
+  console.log(sortData);
+  
+  table.removeAllRows();
+      await buildupHeader(table,tranData);
+      
+      await buildupMenu(table,sortData,tranData,insertIcon);
+      await buildupTable(table,sortData);
+      if(!justForm){
+    await buildupLastTran(table,tranData);
+  }
+  await table.reload(); // refresh UI
+ }catch(e){
+  console.error("Fetch error:", e);
+}
+      
+  };
+    let cardFilter = ctlPnl.addButton("📂");
+  cardFilter.centerAligned(); //
+//   tglAction.widthWeight = 0;
+  cardFilter.font = Font.systemFont(8);
+  cardFilter.onTap = async () => {
+//     if (isTimeSort) {
+console.log(`Unique Cards: ${uniqueCards}`);
+  let vUtils = importModule('Views_utils');
+  const selObj = await vUtils.makeDropDown(uniqueCards);
+  console.log(`Selected items: ${selObj.selection}`);
+  console.log(`Ascending?: ${selObj.isAsc}`);
+      
+    }
+//     ctlPnl.addText(" ").rightAligned();
+  
+  let timeSort = ctlPnl.addButton(timeSortIcon);
+  timeSort.rightAligned();
+  timeSort.widthWeight = 0;
+  timeSort.font = Font.systemFont(8);
+  timeSort.onTap = async () => {
+    if (isTimeSort) {
+    // Already active → just toggle up/down
+    sortAsc = !sortAsc;
+  } else {
+    // Switch from other → make time sort active
+    isTimeSort = true;
+    sortAsc = true; // reset to default "up" when activated
+  }
+  await refreshButtons();
+};
+ctlPnl.addText("").rightAligned();
+table.addRow(ctlPnl);
+let ctlpadding = new UITableRow();
+  ctlpadding.isHeader = true;
+  ctlpadding.height = 15;
+  table.addRow(ctlpadding);
+ }
+async function buildupLastTran(table,tranData){
   
   let padding = new UITableRow();
   padding.isHeader = true;
@@ -582,9 +742,9 @@ await utils.insertTableEntry(
   }
   table.removeAllRows();
       await buildupHeader(table,tranData);
-      if(!justForm){
-    await buildupLastTran(table,tranData);
-  }
+//       if(!justForm){
+//     await buildupLastTran(table,tranData);
+//   }
       await buildupMenu(table,data,tranData,insertIcon);
       await buildupTable(table,data);
       if(!justForm){
@@ -596,7 +756,7 @@ await utils.insertTableEntry(
     
     let amount = row.addText(`₹${Number(tx.amount).toFixed(2)}`);
     amount.titleColor = tx.is_credit ? Color.green() : Color.red();
-    amount.leftAligned();
+    amount.centerAligned();
 //     let isCredit = tx.is_credit;
     let button = row.addButton(tx.is_credit ? "●" : "○");
 button.centerAligned();
@@ -637,11 +797,11 @@ button.onTap = async () => {
    }
   };
 
-    row.addText(tx.card.toString());
+    row.addText(tx.card.toString()).centerAligned();
     const dt = new Date(tx.datetime);
   tranDate = dt.toLocaleDateString(); // "7/7/2025" (or format based on locale)
   tranTime = dt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit',hour12: false }); // "18:42"
-  row.addText(tranTime).centerAligned();
+  row.addText(tranTime).rightAligned();
 //   row.addText("").rightAligned(); 
   let cell = row.addButton("✖️");
   cell.rightAligned();
